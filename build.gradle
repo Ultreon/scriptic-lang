@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+
+group = 'io.github.xypercode'
+version = '0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+
+    // CoreLibs maven
+    maven { url = "https://github.com/Ultreon/corelibs/raw/main/.mvnrepo" }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    // Google findbugs
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Jetbrains Annotations
+    implementation 'org.jetbrains:annotations:23.1.0'
+
+    // Ultreon CoreLibs
+    api "io.github.ultreon.corelibs:collections-v0:0.2.0"
+    api "io.github.ultreon.corelibs:commons-v0:0.2.0"
+    api "io.github.ultreon.corelibs:crash-v0:0.2.0"
+    api "io.github.ultreon.corelibs:datetime-v0:0.2.0"
+    api "io.github.ultreon.corelibs:events-v1:0.2.0"
+    api "io.github.ultreon.corelibs:functions-v0:0.2.0"
+    api "io.github.ultreon.corelibs:registries-v0:0.2.0"
+    api "io.github.ultreon.corelibs:resources-v0:0.2.0"
+    api "io.github.ultreon.corelibs:text-v0:0.2.0"
+    api "io.github.ultreon.corelibs:translations-v0:0.2.0"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    withSourcesJar()
+}

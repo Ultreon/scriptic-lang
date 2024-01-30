@@ -1,0 +1,3 @@
+on script init:
+  ask "what is ur name?"
+  say "hello, " + the answer
