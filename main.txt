@@ -1,3 +1,11 @@
 on script init:
-  ask "what is ur name?"
-  say "hello, " + the answer
+  ask "What is ur name?"
+  assign {answer} to the answer
+  say "Hello " + {answer}
+
+  repeat 10 times:
+    if loop-index is 5:
+      break the loop
+    say "Hello " + loop-index
+
+  say "Goodbye"
