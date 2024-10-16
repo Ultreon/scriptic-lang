@@ -3,78 +3,54 @@ package dev.ultreon.scriptic.impl.effect;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
-import dev.ultreon.scriptic.lang.CodeBlock;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.WhileLoop;
 import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
+import dev.ultreon.scriptic.lang.obj.Expr;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.intellij.lang.annotations.RegExp;
 
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class WhileEffect extends Effect {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(while|until|loop( while)|repeat) (?<condition>.+)$");
-    }
+    @RegExp
+    public static final String PATTERN = "^(while|until|loop( while)|repeat) (?<condition>.+)$";
+    private Expr<Boolean> conditionExpr;
 
     /**
      * Compiles a piece of code for this effect.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher the matcher for the code.
      */
     @Override
-    public CEffect compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var parser = new Parser(code);
-        var code1 = parser.readLine();
-        var matcher = pattern.matcher(code1);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid if statement: " + code1);
-        }
-
-        var block = parser.readIndentedBlock();
-
-        final var conditionExpr = Registries.compileExpr(lineNr, new Parser(matcher.group("condition")));
-
-        final var blockEffect = CEffect.bulkCompile(lineNr, block);
-
-        return new CEffect(this, code, lineNr) {
-            @Override
-            public void run(CodeBlock codeBlock, CodeContext context) throws ScriptException {
-                codeBlock.context().setLastEffect(this);
-
-                WhileLoop loop = new WhileLoop();
-                context.startLoop(loop);
-
-                boolean shouldContinue = conditionExpr.eval(context).cast();
-                while (shouldContinue) {
-                    try (var looperBlock = context.pushBlock(blockEffect, true)) {
-                        looperBlock.invoke();
-
-                        if (loop.isBroken()) {
-                            break;
-                        }
-
-                        shouldContinue = conditionExpr.eval(context).cast();
-                    }
-                }
-
-                context.endLoop();
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        conditionExpr = Registries.compileExpr(lineNr, new Parser(matcher.group("condition")));
     }
 
     @Override
-    public boolean hasCodeBlock() {
+    public void invoke(CodeContext context) throws ScriptException {
+        WhileLoop loop = new WhileLoop();
+        context.startLoop(loop);
+
+        boolean shouldContinue = conditionExpr.doEval(context, Boolean.class);
+        while (shouldContinue) {
+            try (var looperBlock = context.pushBlock(getBlockEffect(), true)) {
+                looperBlock.invoke();
+
+                if (loop.isBroken()) {
+                    break;
+                }
+
+                shouldContinue = conditionExpr.eval(context);
+            }
+        }
+
+        context.endLoop();
+    }
+
+    @Override
+    public boolean requiresBlock() {
         return true;
     }
 }

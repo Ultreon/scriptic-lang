@@ -1,17 +1,14 @@
 package dev.ultreon.scriptic.lang.obj;
 
-import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.CompileException;
-import dev.ultreon.scriptic.Registries;
+import dev.ultreon.scriptic.ScriptException;
+import dev.ultreon.scriptic.ScripticLang;
+import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.LangObject;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEvent;
-import dev.ultreon.scriptic.lang.parser.Parser;
-import org.intellij.lang.annotations.RegExp;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.regex.Matcher;
 
 /**
  * Language Event.
@@ -21,59 +18,57 @@ import java.util.regex.Pattern;
  */
 @ApiStatus.NonExtendable
 public class Event extends LangObject<Event> {
-    private Pattern pattern;
+    private boolean canceled;
     private boolean cancelable;
 
-    @Deprecated
     public Event() {
-
+        this(false);
     }
 
-    public Event(@RegExp String pattern) {
-        this(pattern, false);
-    }
-
-    public Event(@RegExp String pattern, boolean cancelable) {
-        this(Pattern.compile(pattern), cancelable);
-    }
-
-    public Event(Pattern pattern) {
-        this(pattern, false);
-    }
-
-    public Event(Pattern pattern, boolean cancelable) {
-        this.pattern = pattern;
+    public Event(boolean cancelable) {
         this.cancelable = cancelable;
     }
 
     /**
      * Compile the event.
      *
-     * @param lineNr the line number of the code.
-     * @param code the code.
-     * @return the compiled event.
+     * @param lineNr  the line number of the code.
+     * @param matcher the matcher for the code.
      */
     @Override
-    public CEvent compile(int lineNr, String code) throws CompileException {
-        return new CEvent(this, List.of(), CEffect.bulkCompile(lineNr, code));
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+
     }
 
-    /**
-     * Check if parsed code is valid for this event.
-     *
-     * @param code the code to check.
-     * @return true if valid, false otherwise.
-     */
-    public boolean parse(Parser code) {
-        var s = code.readLine();
-        return pattern.matcher(s).matches();
+    @Override
+    public boolean requiresBlock() {
+        return true;
     }
 
-    public Identifier getRegistryName() {
-        return Registries.EVENTS.getKey(this);
+    public void invoke(Map<String, Object> parameters) throws ScriptException {
+        invoke(CodeContext.of(this, parameters));
+    }
+
+    @Override
+    public void invoke(CodeContext context) throws ScriptException {
+        for (Effect effect : getBlockEffect()) {
+            effect.invoke(context);
+        }
+    }
+
+    public String getRegistryName() {
+        return ScripticLang.getPatternForEvent(this);
     }
 
     public boolean isCancelable() {
         return cancelable;
+    }
+
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    public void cancel() {
+        canceled = true;
     }
 }

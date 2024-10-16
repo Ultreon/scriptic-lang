@@ -5,83 +5,83 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class IsExpr extends Expr {
+public class IsExpr extends Expr<Boolean> {
     @SuppressWarnings("rawtypes")
     private static final Map<Class<?>, Consumer> REGISTRY = new HashMap<>();
+    public static final String PATTERN = "^(?<expr1>.+) is(?<inverter> not)? (?<expr2>.+)$";
+    private @UnknownNullability Expr<Object> leftExpr;
+    private @UnknownNullability Expr<Object> rightExpr;
+    private String inverter;
+
+    public IsExpr() {
+        super(Boolean.class);
+    }
 
     @SafeVarargs
     public static <T> void register(Consumer<? super T> consumer, T... typeGetter) {
         REGISTRY.put(typeGetter.getClass().getComponentType(), consumer);
     }
 
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(?<expr1>.+) is(?<inverter> not)? (?<expr2>.+)$");
-    }
-
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
-
+    public void load(int lineNr, Matcher matcher) throws CompileException {
         final var exprCode1 = matcher.group("expr1");
-        final var expr1 = Registries.compileExpr(lineNr, new Parser(exprCode1));
+        leftExpr = Registries.compileExpr(lineNr, new Parser(exprCode1));
 
-        final var inverter = matcher.group("inverter");
+        inverter = matcher.group("inverter");
 
         final var exprCode2 = matcher.group("expr2");
-        final var expr2 = Registries.compileExpr(lineNr, new Parser(exprCode2));
+        rightExpr = Registries.compileExpr(lineNr, new Parser(exprCode2));
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval1 = expr1.eval(context);
-                var eval2 = expr2.eval(context);
-                var valA = eval1.get();
-                var valB = eval2.get();
+    @Override
+    public @NotNull Boolean eval(CodeContext context) throws ScriptException {
+        var left = leftExpr.eval(context);
+        var right = rightExpr.eval(context);
 
+        if (inverter != null && inverter.equals(" not")) {
+            return !left.equals(right);
+        }
 
-                if (inverter != null && inverter.equals(" not")) {
-                    if (valA instanceof Number numA && valB instanceof Number numB) {
-                        return valA instanceof Double || valA instanceof Float || valB instanceof Double || valB instanceof Float
-                                ? new CValue<>(numA.doubleValue() != numB.doubleValue())
-                                : new CValue<>(numA.longValue() != numB.longValue());
-                    }
-                    return new CValue<>(!valA.equals(valB));
-                }
+        if (left instanceof Number a && right instanceof Number b) {
+            if (a instanceof Double || b instanceof Double)
+                return a.doubleValue() == b.doubleValue();
+            if (a instanceof Float || b instanceof Float)
+                return a.floatValue() == b.floatValue();
+            if (a instanceof Long || b instanceof Long)
+                return a.longValue() == b.longValue();
+            if (a instanceof Integer || b instanceof Integer)
+                return a.intValue() == b.intValue();
+            if (a instanceof Short || b instanceof Short)
+                return a.shortValue() == b.shortValue();
+            if (a instanceof Byte || b instanceof Byte)
+                return a.byteValue() == b.byteValue();
+            if (a instanceof BigInteger && b instanceof BigInteger)
+                return a.equals(b);
+            if (a instanceof BigDecimal && b instanceof BigDecimal)
+                return a.equals(b);
+            if (a instanceof BigDecimal && b instanceof BigInteger)
+                return a.equals(new BigDecimal((BigInteger) b));
+            if (a instanceof BigInteger && b instanceof BigDecimal)
+                return new BigDecimal((BigInteger) a).equals(b);
+        }
 
-                if (valA instanceof Number numA && valB instanceof Number numB) {
-                    return valA instanceof Double || valA instanceof Float || valB instanceof Double || valB instanceof Float
-                            ? new CValue<>(numA.doubleValue() == numB.doubleValue())
-                            : new CValue<>(numA.longValue() == numB.longValue());
-                }
-                return new CValue<>(valA.equals(valB));
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        return left.equals(right);
     }
 }

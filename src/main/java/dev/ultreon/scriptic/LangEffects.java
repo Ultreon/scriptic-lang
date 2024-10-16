@@ -1,30 +1,28 @@
 package dev.ultreon.scriptic;
 
-import com.ultreon.libs.commons.v0.Identifier;
-import dev.ultreon.scriptic.impl.effect.*;
 import dev.ultreon.scriptic.impl.effect.*;
 import dev.ultreon.scriptic.lang.obj.Effect;
 
-public class LangEffects {
-    public static final CancelEventEffect CANCEL = register(ScripticLang.id("cancel"), new CancelEventEffect());
-    public static final IfBlockEffect IF_BLOCK = register(ScripticLang.id("if_block"), new IfBlockEffect());
-    public static final IfEffect IF = register(ScripticLang.id("if"), new IfEffect());
-    public static final ElseBlockEffect ELSE_BLOCK = register(ScripticLang.id("else_block"), new ElseBlockEffect());
-    public static final ElseEffect ELSE = register(ScripticLang.id("else"), new ElseEffect());
-    public static final LoopTimesEffect LOOP_TIMES = register(ScripticLang.id("loop_times"), new LoopTimesEffect());
-    public static final ForEffect FOR = register(ScripticLang.id("for"), new ForEffect());
-    public static final WhileEffect WHILE = register(ScripticLang.id("while"), new WhileEffect());
-    public static final BreakTheLoopEffect BREAK_THE_LOOP = register(ScripticLang.id("break_the_loop"), new BreakTheLoopEffect());
-    public static final DeleteEffect DELETE = register(ScripticLang.id("delete"), new DeleteEffect());
-    public static final LogEffect LOG = register(ScripticLang.id("log"), new LogEffect());
-    public static final SetVariableEffect SET_VARIABLE = register(ScripticLang.id("set_variable"), new SetVariableEffect());
+import java.util.function.Supplier;
 
-    private static <T extends Effect> T register(Identifier name, T effect) {
-        Registries.EFFECTS.register(name, effect);
-        return effect;
+public class LangEffects {
+    @SuppressWarnings("unchecked")
+    private static <T extends Effect> void register(String name, Supplier<T> supplier, T... typeGetter) {
+        Registries.EFFECTS.register(name, (Supplier<Effect>) supplier, (Class<Effect>) typeGetter.getClass().getComponentType());
     }
 
     public static void init() {
-        // Initialize class
+        register(CancelEventEffect.PATTERN, CancelEventEffect::new);
+        register(IfBlockEffect.PATTERN, IfBlockEffect::new);
+        register(IfEffect.PATTERN, IfEffect::new);
+        register(ElseBlockEffect.PATTERN, ElseBlockEffect::new);
+        register(ElseEffect.PATTERN, ElseEffect::new);
+        register(LoopTimesEffect.PATTERN, LoopTimesEffect::new);
+        register(ForEffect.PATTERN, ForEffect::new);
+        register(WhileEffect.PATTERN, WhileEffect::new);
+        register(BreakTheLoopEffect.PATTERN, BreakTheLoopEffect::new);
+        register(DeleteEffect.PATTERN, DeleteEffect::new);
+        register(LogEffect.PATTERN, LogEffect::new);
+        register(SetVariableEffect.PATTERN, SetVariableEffect::new);
     }
 }

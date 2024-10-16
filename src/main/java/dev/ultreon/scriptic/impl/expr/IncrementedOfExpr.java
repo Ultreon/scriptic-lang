@@ -3,53 +3,61 @@ package dev.ultreon.scriptic.impl.expr;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
+import dev.ultreon.scriptic.ScripticLang;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.math.BigInteger;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class IncrementedOfExpr extends Expr {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^incremented (value |)of (?<expr>.+)$");
+    public static final String PATTERN = "^incremented (value |)of (?<expr>.+)$";
+    private @UnknownNullability Expr<Object> expr;
+
+    public IncrementedOfExpr() {
+        super(Number.class);
     }
 
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        var exprCode = matcher.group("expr");
+        expr = Registries.compileExpr(lineNr, new Parser(exprCode));
+    }
 
-//        System.out.println("code[compile[logExpr]] = " + code);
+    @Override
+    public void invoke(CodeContext context) throws ScriptException {
 
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new CompileException("Invalid code: " + code, lineNr);
+    }
+
+    @Override
+    public @NotNull Object eval(CodeContext context) throws ScriptException {
+        var eval = expr.eval(context);
+
+        if (eval instanceof BigInteger bigInteger) {
+            return bigInteger.add(BigInteger.ONE);
+        } else if (eval instanceof Double doubleValue) {
+            return doubleValue + 1;
+        } else if (eval instanceof Float floatValue) {
+            return floatValue + 1;
+        } else if (eval instanceof Long longValue) {
+            return longValue + 1;
+        } else if (eval instanceof Integer intValue) {
+            return intValue + 1;
+        } else if (eval instanceof Short shortValue) {
+            return shortValue + 1;
+        } else if (eval instanceof Byte byteValue) {
+            return byteValue + 1;
         }
 
-        var exprCode = matcher.group("expr");
-        final var expr = Registries.compileExpr(lineNr, new Parser(exprCode));
-
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval = expr.eval(context);
-                return new CValue<>(((BigInteger)eval.get()).add(BigInteger.ONE));
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        throw new ScriptException("Invalid type for incremented expression: " + ScripticLang.getTypeName(eval.getClass()));
     }
 }

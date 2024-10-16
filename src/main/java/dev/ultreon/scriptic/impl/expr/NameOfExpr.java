@@ -5,9 +5,10 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.intellij.lang.annotations.RegExp;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -15,11 +16,14 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class NameOfExpr extends Expr {
+public class NameOfExpr extends Expr<String> {
+    @RegExp
+    private static final String PATTERN = "^(the |)name of (?<expr>.+)$";
     @SuppressWarnings("rawtypes")
     private static final Map<Class<?>, Function> REGISTRY = new HashMap<>();
+    public static final String PATTERN1 = "^(the |)name of (?<expr>.+)$";
 
     static {
         register(File::getName);
@@ -27,59 +31,38 @@ public class NameOfExpr extends Expr {
         register((Locale locale) -> locale.getDisplayName());
     }
 
+    private @UnknownNullability Expr<Object> expr;
+
+    public NameOfExpr() {
+        super(String.class);
+    }
+
     @SafeVarargs
     public static <T> void register(Function<? super T, String> consumer, T... typeGetter) {
         REGISTRY.put(typeGetter.getClass().getComponentType(), consumer);
     }
 
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(the |)name of (?<expr>.+)$");
-    }
-
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
+    public void load(int lineNr, Matcher matcher) throws CompileException {        final var exprCode = matcher.group("expr");
+        expr = Registries.compileExpr(lineNr, new Parser(exprCode));
+    }
 
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull String eval(CodeContext context) throws ScriptException {
+        var value = expr.eval(context);
+        for (var entry : REGISTRY.entrySet()) {
+            if (entry.getKey().isInstance(value)) {
+                return (String) entry.getValue().apply(value);
+            }
         }
-        final var exprCode = matcher.group("expr");
-        final var expr = Registries.compileExpr(lineNr, new Parser(exprCode));
 
-        return new CExpr(this, code, lineNr) {
-            @SuppressWarnings("unchecked")
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval = expr.eval(context);
-
-                var o = eval.get();
-
-                if (o == null) {
-                    return new CValue<>(null);
-                }
-
-                for (var entry : REGISTRY.entrySet()) {
-                    if (entry.getKey().isInstance(o)) {
-                        return new CValue<>(entry.getValue().apply(o));
-                    }
-                }
-
-                throw new IllegalArgumentException("Expected to have something that has a name, got expression: " + exprCode);
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        throw new IllegalArgumentException("Expected to have something that has a name, got expression: " + expr);
     }
 }

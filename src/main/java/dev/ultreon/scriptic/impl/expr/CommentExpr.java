@@ -5,47 +5,33 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class CommentExpr extends Expr {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("(?<expr>.*) *//.*$");
+public class CommentExpr extends Expr<Object> {
+    private @UnknownNullability Expr<Object> expr1;
+
+    public CommentExpr() {
+        super(Object.class);
     }
 
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid comment (yeah, idk what happened here): " + code);
-        }
-
+    public void load(int lineNr, Matcher matcher) throws CompileException {
         var expr = matcher.group("expr");
-        var expr1 = Registries.compileExpr(lineNr, new Parser(expr));
+        expr1 = Registries.compileExpr(lineNr, new Parser(expr));
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                return expr1.eval(context);
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    @Override
+    public @NotNull Object eval(CodeContext context) throws ScriptException {
+        return expr1.eval(context);
     }
 }

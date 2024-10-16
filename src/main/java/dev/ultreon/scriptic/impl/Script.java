@@ -2,26 +2,27 @@ package dev.ultreon.scriptic.impl;
 
 import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.*;
-import dev.ultreon.scriptic.*;
+import dev.ultreon.scriptic.impl.struct.EventStruct;
+import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Event;
-import dev.ultreon.scriptic.lang.obj.compiled.CEvent;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class Script {
     private final Path filePath;
-    private final List<CEvent> compiledEvents = new ArrayList<>();
+    private final List<EventStruct> compiledEvents = new ArrayList<>();
     private final Map<String, Object> rootProperties;
 
     private static final Map<Path, Script> scripts = new HashMap<>();
-    private final Map<String, CValue<?>> variables = new HashMap<>();
+    private final Map<String, Object> variables = new HashMap<>();
     private final Map<Identifier, Object> runtimeVars = new HashMap<>();
 
     private static Logger logger = new StdOutLogger();
@@ -58,16 +59,17 @@ public class Script {
         return logger;
     }
 
-    public CValue<?> get(String name) {
+    public Object get(String name) {
         return variables.get(name);
     }
 
     @SafeVarargs
-    public final <T> CValue<T> cast(String name, T... typeGetter) throws ScriptException {
-        return new CValue<>(get(name).cast(typeGetter));
+    @SuppressWarnings("unchecked")
+    public final <T> T cast(String name, T... typeGetter) {
+        return (T) typeGetter.getClass().getComponentType().cast(get(name));
     }
 
-    public void set(String name, CValue<?> value) {
+    public void set(String name, Object value) {
         variables.put(name, value);
     }
 
@@ -159,11 +161,14 @@ public class Script {
         var parser = new Parser(code);
 
         while (!parser.isEOF()) {
-            var compiled = Registries.compileEvent(parser.row(), parser);
+            int row = parser.row();
+            var compiled = Registries.compileEvent(row, parser);
             if (compiled == null) {
-                throw new CompileException("Failed to compile event", parser.row());
+                throw new CompileException("Failed to compile event", row);
             }
+            compiled.preload(row, parser.getRow(row));
             compiledEvents.add(compiled);
+            compiled.load(row, null);
         }
 
         this.compiled = true;
@@ -173,59 +178,11 @@ public class Script {
         if (!compiled) {
             throw new ScriptException("Script hasn't been compiled yet!");
         }
-        invokeEventInternal(LangEvents.SCRIPT_INIT, new HashMap<>());
-    }
-
-    private void invokeEventInternal(Event event, Map<String, Object> properties) throws ScriptException {
-        invokeEventInternal(event.getRegistryName(), properties);
+        invokeEventInternal(LangEvents.SCRIPT_INIT, rootProperties);
     }
 
     public Path getFilePath() {
         return filePath;
-    }
-
-    private void invokeEventInternal(Identifier event, Map<String, Object> properties) throws ScriptException {
-        this.invokeEventInternal(event, properties, cEvent -> true);
-    }
-
-    private void invokeEventInternal(Event event, Map<String, Object> properties, Predicate<CEvent> filter) throws ScriptException {
-        invokeEventInternal(event.getRegistryName(), properties, filter);
-    }
-
-    private void invokeEventInternal(Identifier event, Map<String, Object> properties, Predicate<CEvent> filter) throws ScriptException {
-        for (String property : properties.keySet()) {
-            if (rootProperties.containsKey(property)) {
-                throw new IllegalArgumentException("Can't override root property: " + property);
-            }
-        }
-        properties.putAll(rootProperties);
-
-        for (var compiledEvent : compiledEvents) {
-            if (!filter.test(compiledEvent)) {
-                continue;
-            }
-
-            var registryName = compiledEvent.getListensTo().getRegistryName();
-            if (registryName == null) {
-                throw new IllegalStateException("Event has no registry name: " + compiledEvent.getListensTo().getClass().getName());
-            }
-
-            if (registryName.equals(event)) {
-                compiledEvent.call(properties);
-            }
-        }
-    }
-
-    /**
-     * Invokes the event with the given name and properties.
-     *
-     * @param event      The name of the event to invoke.
-     * @param properties The properties to pass to the event.
-     */
-    public static void invokeEvent(Identifier event, Map<String, Object> properties) throws ScriptException {
-        for (var script : scripts.values()) {
-            script.invokeEventInternal(event, properties);
-        }
     }
 
     /**
@@ -239,32 +196,16 @@ public class Script {
             try {
                 script.invokeEventInternal(event, properties);
             } catch (ScriptException e) {
-                logger.error("Failed to invoke event " + event.getRegistryName() + " in script " + script.getFilePath(), e);
+                logger.error("Failed to invoke event " + event.getClass().getName() + " in script " + script.getFilePath(), e);
             }
         }
     }
 
-    /**
-     * Invokes the event with the given name and properties.
-     *
-     * @param event      The name of the event to invoke.
-     * @param properties The properties to pass to the event.
-     */
-    public static void updateEvents(Identifier event, Map<String, Object> properties, Predicate<CEvent> filter) throws ScriptException {
-        for (var script : scripts.values()) {
-            script.invokeEventInternal(event, properties, filter);
-        }
-    }
-
-    /**
-     * Invokes the event with the given name and properties.
-     *
-     * @param event      The name of the event to invoke.
-     * @param properties The properties to pass to the event.
-     */
-    public static void invokeEvent(Event event, Map<String, Object> properties, Predicate<CEvent> filter) throws ScriptException {
-        for (var script : scripts.values()) {
-            script.invokeEventInternal(event, properties, filter);
+    private void invokeEventInternal(Event event, Map<String, Object> properties) throws ScriptException {
+        for (EventStruct evt : compiledEvents) {
+            if (evt.getEventType() == event) {
+                evt.invoke(CodeContext.of(event, properties));
+            }
         }
     }
 

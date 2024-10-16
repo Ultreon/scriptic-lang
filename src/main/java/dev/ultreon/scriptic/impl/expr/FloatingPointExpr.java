@@ -4,40 +4,28 @@ import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.regex.Pattern;
+import java.math.BigDecimal;
+import java.util.regex.Matcher;
 
-public class FloatingPointExpr extends Expr {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(?<number>\\d+([,.])\\d+)$");
+public class FloatingPointExpr extends Expr<BigDecimal> {
+
+    public static final String PATTERN = "^(?<number>\\d+([,.])\\d+)$";
+
+    public FloatingPointExpr() {
+        super(BigDecimal.class);
     }
 
-    /**
-     * Compiles a piece of code for this expression.
-     *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
-     */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var parser = new Parser(code);
-        var s = parser.readNumber();
+    public void load(int lineNr, Matcher matcher) throws CompileException {
 
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                return new CValue<>(s);
-            }
+    }
 
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    @Override
+    public @NotNull BigDecimal eval(CodeContext context) throws ScriptException {
+        var parser = new Parser(code());
+        return parser.readNumber();
     }
 }

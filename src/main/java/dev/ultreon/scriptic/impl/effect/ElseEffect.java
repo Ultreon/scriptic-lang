@@ -3,56 +3,40 @@ package dev.ultreon.scriptic.impl.effect;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
-import dev.ultreon.scriptic.lang.CodeBlock;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
-import dev.ultreon.scriptic.lang.parser.Parser;
+import org.intellij.lang.annotations.RegExp;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class ElseEffect extends Effect {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^else (?<expr>.+)$");
-    }
+    @RegExp
+    public static final String PATTERN = "^else (?<expr>.+)$";
+    private @Nullable Effect effect;
+    private int lineNr;
 
     /**
      * Compiles a piece of code for this effect.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CEffect compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        this.lineNr = lineNr;
+        effect = Registries.compileEffect(lineNr, matcher.group("expr"));
+    }
 
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
+    @Override
+    public void invoke(CodeContext context) throws ScriptException {
+        var ifStatement = context.getCurrentBlock().getIfStatement();
+        if (ifStatement == null)
+            throw new ScriptException("Expected previous expression to be an if.", lineNr);
+        if (!Boolean.TRUE.equals(ifStatement.isSucceeded()))
+            return;
 
-        final var effectCode = matcher.group("expr");
-        final var effect = Registries.compileEffect(lineNr, new Parser(effectCode));
-
-        return new CEffect(this, code, lineNr) {
-            @Override
-            public void run(CodeBlock codeBlock, CodeContext context) throws ScriptException {
-                var ifStatement = codeBlock.getIfStatement();
-                if (ifStatement == null)
-                    throw new ScriptException("Expected previous expression to be an if.", lineNr);
-                if (!Boolean.TRUE.equals(ifStatement.isSucceeded()))
-                    return;
-
-                effect.invoke(context);
-                // If the 'if' effect has not succeeded, we don't execute the else effect.
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        effect.invoke(context);
+        // If the 'if' effect has not succeeded, we don't execute the else effect.
     }
 }

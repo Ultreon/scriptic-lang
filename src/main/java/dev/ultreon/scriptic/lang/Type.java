@@ -1,22 +1,33 @@
 package dev.ultreon.scriptic.lang;
 
-import com.ultreon.libs.commons.v0.Identifier;
+import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.Registries;
+import dev.ultreon.scriptic.ScriptException;
 
-import javax.annotation.RegEx;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class Type {
+public class Type extends LangObject<Type> {
     private final Class<?> type;
-    private final Pattern name;
+    private final String name;
 
-    public Type(Class<?> type, @RegEx String name) {
+    public Type(Class<?> type, String name) {
         this.type = type;
-        this.name = Pattern.compile(name);
+        this.name = name;
     }
 
-    public Pattern getName() {
-        return name;
+    @Override
+    public String getRegistryName() {
+        return Registries.TYPES.getKey(this);
+    }
+
+    @Override
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+
+    }
+
+    @Override
+    public void invoke(CodeContext context) throws ScriptException {
+        context.setLastType(this);
     }
 
     public Class<?> getType() {
@@ -24,11 +35,18 @@ public class Type {
     }
 
     public boolean isValid(String code) {
-        return name.matcher(code).find();
+        return getPattern().matcher(code).find();
     }
 
-
-    private Identifier getRegistryName() {
+    private String getName() {
         return Registries.TYPES.getKey(this);
+    }
+
+    public boolean isInstance(Object valA) {
+        return type.isInstance(valA);
+    }
+
+    public String getDisplayName() {
+        return name;
     }
 }

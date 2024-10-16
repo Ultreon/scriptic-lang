@@ -5,168 +5,154 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class PlusExpr extends Expr {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(?<expr1>.+) \\+ (?<expr2>.+)$");
+public class PlusExpr extends Expr<Object> {
+    public static final String PATTERN = "^(?<expr1>.+) \\+ (?<expr2>.+)$";
+    private @UnknownNullability Expr<Object> leftExpr;
+    private @UnknownNullability Expr<Object> rightExpr;
+
+    public PlusExpr() {
+        super(Object.class);
     }
 
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
-
+    public void load(int lineNr, Matcher matcher) throws CompileException {
         final var exprCode1 = matcher.group("expr1");
-        final var expr1 = Registries.compileExpr(lineNr, new Parser(exprCode1));
+        leftExpr = Registries.compileExpr(lineNr, new Parser(exprCode1));
 
         final var exprCode2 = matcher.group("expr2");
-        final var expr2 = Registries.compileExpr(lineNr, new Parser(exprCode2));
+        rightExpr = Registries.compileExpr(lineNr, new Parser(exprCode2));
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval1 = expr1.eval(context);
-                var eval2 = expr2.eval(context);
-                var valA = eval1.get();
-                var valB = eval2.get();
-                if (valA instanceof BigDecimal a && valB instanceof BigDecimal b) {
-                    return new CValue<>(a.add(b));
-                } else if (valA instanceof BigDecimal a && valB instanceof BigInteger b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigDecimal a && valB instanceof Double b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigDecimal a && valB instanceof Float b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigDecimal a && valB instanceof Long b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigDecimal a && valB instanceof Integer b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigDecimal a && valB instanceof Short b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigDecimal a && valB instanceof Byte b) {
-                    return new CValue<>(a.add(new BigDecimal(b)));
-                } else if (valA instanceof BigInteger a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof Double a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof Float a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof Long a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof Integer a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof Short a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof Byte a && valB instanceof BigDecimal b) {
-                    return new CValue<>(b.add(new BigDecimal(a)));
-                } else if (valA instanceof BigInteger a && valB instanceof BigInteger b) {
-                    return new CValue<>(a.add(b));
-                } else if (valA instanceof Integer a && valB instanceof Integer b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Integer a && valB instanceof Short b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Integer a && valB instanceof Byte b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Short a && valB instanceof Integer b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Byte a && valB instanceof Integer b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Long a && valB instanceof Long b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Long a && valB instanceof Integer b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Long a && valB instanceof Short b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Long a && valB instanceof Byte b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Integer a && valB instanceof Long b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Short a && valB instanceof Long b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Byte a && valB instanceof Long b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Double a && valB instanceof Double b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Double a && valB instanceof Float b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Double a && valB instanceof Long b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Double a && valB instanceof Integer b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Double a && valB instanceof Short b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Double a && valB instanceof Byte b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Float a && valB instanceof Double b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Long a && valB instanceof Double b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Integer a && valB instanceof Double b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Short a && valB instanceof Double b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Byte a && valB instanceof Double b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Float a && valB instanceof Float b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Float a && valB instanceof Long b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Float a && valB instanceof Integer b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Float a && valB instanceof Short b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Float a && valB instanceof Byte b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Long a && valB instanceof Float b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Integer a && valB instanceof Float b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Short a && valB instanceof Float b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Byte a && valB instanceof Float b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Short a && valB instanceof Short b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Short a && valB instanceof Byte b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Byte a && valB instanceof Short b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof Byte a && valB instanceof Byte b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof String a && valB instanceof String b) {
-                    return new CValue<>(a + b);
-                } else if (valA instanceof String a) {
-                    return new CValue<>(a + valB);
-                } else if (valB instanceof String b) {
-                    return new CValue<>(valA.toString() + b);
-                } else {
-                    throw new IllegalArgumentException("Invalid types: " + valA.getClass().getName() + " and " + valB.getClass().getName());
-                }
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    @Override
+    public @NotNull Object eval(CodeContext context) throws ScriptException {
+        var left = leftExpr.eval(context);
+        var right = rightExpr.eval(context);
+        if (left instanceof BigDecimal a && right instanceof BigDecimal b) {
+            return a.add(b);
+        } else if (left instanceof BigDecimal a && right instanceof BigInteger b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigDecimal a && right instanceof Double b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigDecimal a && right instanceof Float b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigDecimal a && right instanceof Long b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigDecimal a && right instanceof Integer b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigDecimal a && right instanceof Short b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigDecimal a && right instanceof Byte b) {
+            return a.add(new BigDecimal(b));
+        } else if (left instanceof BigInteger a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof Double a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof Float a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof Long a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof Integer a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof Short a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof Byte a && right instanceof BigDecimal b) {
+            return b.add(new BigDecimal(a));
+        } else if (left instanceof BigInteger a && right instanceof BigInteger b) {
+            return a.add(b);
+        } else if (left instanceof Integer a && right instanceof Integer b) {
+            return a + b;
+        } else if (left instanceof Integer a && right instanceof Short b) {
+            return a + b;
+        } else if (left instanceof Integer a && right instanceof Byte b) {
+            return a + b;
+        } else if (left instanceof Short a && right instanceof Integer b) {
+            return a + b;
+        } else if (left instanceof Byte a && right instanceof Integer b) {
+            return a + b;
+        } else if (left instanceof Long a && right instanceof Long b) {
+            return a + b;
+        } else if (left instanceof Long a && right instanceof Integer b) {
+            return a + b;
+        } else if (left instanceof Long a && right instanceof Short b) {
+            return a + b;
+        } else if (left instanceof Long a && right instanceof Byte b) {
+            return a + b;
+        } else if (left instanceof Integer a && right instanceof Long b) {
+            return a + b;
+        } else if (left instanceof Short a && right instanceof Long b) {
+            return a + b;
+        } else if (left instanceof Byte a && right instanceof Long b) {
+            return a + b;
+        } else if (left instanceof Double a && right instanceof Double b) {
+            return a + b;
+        } else if (left instanceof Double a && right instanceof Float b) {
+            return a + b;
+        } else if (left instanceof Double a && right instanceof Long b) {
+            return a + b;
+        } else if (left instanceof Double a && right instanceof Integer b) {
+            return a + b;
+        } else if (left instanceof Double a && right instanceof Short b) {
+            return a + b;
+        } else if (left instanceof Double a && right instanceof Byte b) {
+            return a + b;
+        } else if (left instanceof Float a && right instanceof Double b) {
+            return a + b;
+        } else if (left instanceof Long a && right instanceof Double b) {
+            return a + b;
+        } else if (left instanceof Integer a && right instanceof Double b) {
+            return a + b;
+        } else if (left instanceof Short a && right instanceof Double b) {
+            return a + b;
+        } else if (left instanceof Byte a && right instanceof Double b) {
+            return a + b;
+        } else if (left instanceof Float a && right instanceof Float b) {
+            return a + b;
+        } else if (left instanceof Float a && right instanceof Long b) {
+            return a + b;
+        } else if (left instanceof Float a && right instanceof Integer b) {
+            return a + b;
+        } else if (left instanceof Float a && right instanceof Short b) {
+            return a + b;
+        } else if (left instanceof Float a && right instanceof Byte b) {
+            return a + b;
+        } else if (left instanceof Long a && right instanceof Float b) {
+            return a + b;
+        } else if (left instanceof Integer a && right instanceof Float b) {
+            return a + b;
+        } else if (left instanceof Short a && right instanceof Float b) {
+            return a + b;
+        } else if (left instanceof Byte a && right instanceof Float b) {
+            return a + b;
+        } else if (left instanceof Short a && right instanceof Short b) {
+            return a + b;
+        } else if (left instanceof Short a && right instanceof Byte b) {
+            return a + b;
+        } else if (left instanceof Byte a && right instanceof Short b) {
+            return a + b;
+        } else if (left instanceof Byte a && right instanceof Byte b) {
+            return a + b;
+        } else if (left instanceof String a && right instanceof String b) {
+            return a + b;
+        } else if (left instanceof String a) {
+            return a + right;
+        } else if (right instanceof String b) {
+            return left + b;
+        } else {
+            throw new IllegalArgumentException("Invalid types: " + left.getClass().getName() + " and " + right.getClass().getName());
+        }
     }
 }

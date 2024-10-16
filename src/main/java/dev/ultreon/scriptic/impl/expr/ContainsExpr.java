@@ -5,18 +5,19 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class ContainsExpr extends Expr {
+public class ContainsExpr extends Expr<Boolean> {
     @SuppressWarnings("rawtypes")
     private static final Map<Class<?>, BiPredicate> REGISTRY = new HashMap<>();
+    public static final String PATTERN = "^(?<expr1>.+) contains (?<expr2>.+)$";
 
     static {
         ContainsExpr.<String>register((a, b) -> {
@@ -28,65 +29,36 @@ public class ContainsExpr extends Expr {
         });
     }
 
+    private @UnknownNullability Expr<Object> expr1;
+    private @UnknownNullability Expr<Object> expr2;
+
+    public ContainsExpr() {
+        super(Boolean.class);
+    }
+
     @SafeVarargs
     public static <T> void register(BiPredicate<? super T, Object> consumer, T... typeGetter) {
         REGISTRY.put(typeGetter.getClass().getComponentType(), consumer);
     }
 
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(?<expr1>.+) contains (?<expr2>.+)$");
-    }
-
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
-
+    public void load(int lineNr, Matcher matcher) throws CompileException {
         final var exprCode1 = matcher.group("expr1");
-        final var expr1 = Registries.compileExpr(lineNr, new Parser(exprCode1));
+        expr1 = Registries.compileExpr(lineNr, new Parser(exprCode1));
 
         final var exprCode2 = matcher.group("expr2");
-        final var expr2 = Registries.compileExpr(lineNr, new Parser(exprCode2));
+        expr2 = Registries.compileExpr(lineNr, new Parser(exprCode2));
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @SuppressWarnings("unchecked")
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval1 = expr1.eval(context);
-                var valA = eval1.get();
-
-                var eval2 = expr2.eval(context);
-                var valB = eval2.get();
-
-                if (valA == null) {
-                    return new CValue<>(null);
-                }
-
-                for (var entry : REGISTRY.entrySet()) {
-                    if (entry.getKey().isInstance(valA)) {
-                        return new CValue<>(entry.getValue().test(valA, valB));
-                    }
-                }
-
-                throw new IllegalArgumentException("Expected to have something that is a container, got expression: " + exprCode1);
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull Boolean eval(CodeContext context) throws ScriptException {
+        return REGISTRY.getOrDefault(expr1.eval(context).getClass(), (a, b) -> false).test(expr1.eval(context), expr2.eval(context));
     }
 }

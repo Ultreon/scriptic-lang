@@ -5,49 +5,60 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
-import java.util.regex.Pattern;
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
 
-public class IsNothingExpr extends Expr {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(?<expr1>.+) is( nothing| none| null| nil|(n't| not) any(thing|one)?| something)$");
+public class IsNothingExpr extends Expr<Boolean> {
+    public static final String PATTERN = "^(?<expr1>.+) is( nothing| none| null| nil|(n't| not) any(thing|one)?| something)$";
+    private @UnknownNullability Expr<Object> expr1;
+
+    private static final Map<Class<?>, Predicate> REGISTRY = new HashMap<>();
+
+    public IsNothingExpr() {
+        super(Boolean.class);
+    }
+
+    @SafeVarargs
+    public static <T> void register(Predicate<T> predicate, T... typeGetter) {
+        REGISTRY.put(typeGetter.getClass().getComponentType(), predicate);
     }
 
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
-
+    public void load(int lineNr, Matcher matcher) throws CompileException {
         final var exprCode1 = matcher.group("expr1");
-        final var expr1 = Registries.compileExpr(lineNr, new Parser(exprCode1));
+        expr1 = Registries.compileExpr(lineNr, new Parser(exprCode1));
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval1 = expr1.eval(context);
-                var valA = eval1.get();
-                return new CValue<>(valA == null);
-            }
+    @Override
+    public @NotNull Boolean eval(CodeContext context) throws ScriptException {
+        var valA = expr1.eval(context);
 
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        return isNothing(valA);
+    }
+
+    static @NotNull Boolean isNothing(Object valA) {
+        var type = valA.getClass();
+        if (valA == Null.NULL) return true;
+        if (valA instanceof String) return valA.equals("");
+        if (valA instanceof Number) return valA.equals(0);
+        if (valA instanceof Collection<?>) return ((Collection<?>) valA).isEmpty();
+        if (valA instanceof Iterable) return !((Iterable<?>) valA).iterator().hasNext();
+        if (type.isArray()) return Array.getLength(valA) == 0;
+
+        if (REGISTRY.containsKey(type)) return REGISTRY.get(type).test(valA);
+
+        return false;
     }
 }

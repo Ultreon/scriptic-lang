@@ -3,12 +3,10 @@ package dev.ultreon.scriptic.impl.effect;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
-import dev.ultreon.scriptic.lang.CodeBlock;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.parser.Parser;
+import dev.ultreon.scriptic.lang.obj.Expr;
+import org.intellij.lang.annotations.RegExp;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,11 +15,13 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class DeleteIfExistsEffect extends Effect {
     @SuppressWarnings("rawtypes")
     private static final Map<Class<?>, Consumer> REGISTRY = new HashMap<>();
+    @RegExp
+    public static final String PATTERN = "^(delete|discard|remove) (?<expr>.+) if ((it )?exists|existent)$";
 
     static {
         register((File file) -> {
@@ -36,70 +36,35 @@ public class DeleteIfExistsEffect extends Effect {
         });
     }
 
+    private Expr expr;
+
     @SafeVarargs
     public static <T> void register(Consumer<? super T> consumer, T... typeGetter) {
         REGISTRY.put(typeGetter.getClass().getComponentType(), consumer);
     }
 
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(delete|discard|remove) (?<expr>.+) if ((it )?exists|existent)$");
-    }
-
     /**
      * Compiles a piece of code for this effect.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher the matcher for the code.
      */
     @Override
-    public CEffect compile(int lineNr, String code) throws CompileException {
-        var pattern = Pattern.compile("^(delete|discard|remove) (?<expr>.+)|$");
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
-        var effectCode = matcher.group("expr");
-        var expr = Registries.compileExpr(lineNr, new Parser(effectCode));
-
-        return new CEffectImpl(code, lineNr, expr);
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        expr = Registries.compileExpr(lineNr, matcher.group("expr"));
     }
 
-    private class CEffectImpl extends CEffect {
-        private final String code;
-        private final CExpr expr;
+    @Override
+    public void invoke(CodeContext context) throws ScriptException {
+        if (expr == null) return;
+        expr.eval(context);
 
-        public CEffectImpl(String code, int lineNr, CExpr expr) {
-            super(DeleteIfExistsEffect.this, code, lineNr);
-            this.code = code;
-            this.expr = expr;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        protected void run(CodeBlock codeBlock, CodeContext context) throws ScriptException {
-            if (expr != null) {
-                var eval = expr.eval(context);
-                var o = eval.get();
-                if (o == null) {
-                    throw new IllegalArgumentException("Cannot delete nothing, got " + expr);
-                }
-
-                for (var entry : REGISTRY.entrySet()) {
-                    if (entry.getKey().isInstance(o)) {
-                        entry.getValue().accept(o);
-                    }
-                }
-
-                throw new IllegalArgumentException("Expected to find something deletable, but got " + expr);
+        for (var entry : REGISTRY.entrySet()) {
+            if (entry.getKey().isInstance(expr.eval(context))) {
+                entry.getValue().accept(expr.eval(context));
             }
         }
 
-        @Override
-        public String toString() {
-            return code;
-        }
+        throw new IllegalArgumentException("Expected to find something deletable, but got " + expr);
     }
 }

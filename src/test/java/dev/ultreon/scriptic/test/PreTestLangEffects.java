@@ -1,19 +1,18 @@
 package dev.ultreon.scriptic.test;
 
-import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.Registries;
-import dev.ultreon.scriptic.ScripticLang;
 import dev.ultreon.scriptic.lang.obj.Effect;
 
-public class PreTestLangEffects {
-    public static final AskEffect ASK = register(ScripticLang.id("test_ask"), new AskEffect());
+import java.util.function.Supplier;
 
-    private static <T extends Effect> T register(Identifier id, T effect) {
-        Registries.EFFECTS.register(id, effect);
-        return effect;
+public class PreTestLangEffects {
+    @SuppressWarnings("unchecked")
+    @SafeVarargs
+    private static <T extends Effect> void register(String id, Supplier<T> effect, T... typeGetter) {
+        Registries.EFFECTS.register(id, (Supplier<Effect>) effect, (Class<Effect>) typeGetter.getClass().getComponentType());
     }
 
     public static void init() {
-
+        register(AskEffect.PATTERN, AskEffect::new);
     }
 }

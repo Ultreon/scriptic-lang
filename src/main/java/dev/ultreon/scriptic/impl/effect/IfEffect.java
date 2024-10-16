@@ -3,68 +3,45 @@ package dev.ultreon.scriptic.impl.effect;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
-import dev.ultreon.scriptic.lang.CodeBlock;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
+import dev.ultreon.scriptic.lang.obj.Expr;
 import dev.ultreon.scriptic.lang.parser.Parser;
-import org.jetbrains.annotations.UnknownNullability;
+import org.intellij.lang.annotations.RegExp;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class IfEffect extends Effect {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(if|when) (?<expr1>.+)( then|,) (?<expr2b>.+)$");
-    }
+    @RegExp
+    public static final String PATTERN = "^(if|when) (?<condition>.+)( then|,) (?<effect>.+)$";
+    private Expr<Boolean> condition;
+    private @Nullable Effect effect;
 
     /**
      * Compiles a piece of code for this effect.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher the matcher for the code.
      */
     @Override
-    public CEffect compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
-        final var effectCode1 = matcher.group("expr1");
-        final @UnknownNullability CExpr effect1 = Registries.compileExpr(lineNr, new Parser(effectCode1));
-
-        final var effectCode2a = matcher.group("expr2a");
-        final String effectCode2b;
-        final CEffect effect2;
-        if (effectCode2a != null) {
-            effect2 = CEffect.ofCodeBlock(lineNr, new Parser(effectCode2a).readIndentedBlock(2));
-        } else {
-            effectCode2b = matcher.group("expr2b");
-            effect2 = Registries.compileEffect(lineNr, new Parser(effectCode2b));
-        }
-
-        return new CEffect(this, code, lineNr) {
-            @Override
-            public void run(CodeBlock codeBlock, CodeContext context) throws ScriptException {
-                boolean predicate = (Boolean) effect1.eval(context).get();
-                if (predicate) {
-                    effect2.invoke(codeBlock, context);
-                }
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        condition = Registries.compileExpr(lineNr, new Parser(matcher.group("condition")));
+        effect = Registries.compileEffect(lineNr, matcher.group("effect"));
     }
 
     @Override
-    public boolean hasCodeBlock() {
+    public void invoke(CodeContext context) throws ScriptException {
+        if (effect != null) {
+            boolean predicate = condition.eval(context);
+            if (predicate) {
+                effect.invoke(context);
+            }
+        }
+    }
+
+    @Override
+    public boolean requiresBlock() {
         return true;
     }
 }

@@ -2,49 +2,34 @@ package dev.ultreon.scriptic.impl.effect;
 
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.ScriptException;
-import dev.ultreon.scriptic.lang.CodeBlock;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
+import org.intellij.lang.annotations.RegExp;
 
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class CancelEventEffect extends Effect {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(cancel|stop)( event|)$");
-    }
+    @RegExp
+    public static final String PATTERN = "^(cancel|stop)( event|)$";
+    private int lineNr;
 
     /**
      * Compiles a piece of code for this effect.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CEffect compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        this.lineNr = lineNr;
+    }
 
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
+    @Override
+    public void invoke(CodeContext context) throws ScriptException {
+        if (context.isEventCancelable()) {
+            throw new ScriptException("Event is not cancellable", lineNr);
         }
 
-        return new CEffect(this, code, lineNr) {
-            @Override
-            public void run(CodeBlock codeBlock, CodeContext context) throws ScriptException {
-                if (context.isEventCancellable()) {
-                    throw new IllegalArgumentException("Event is not cancellable");
-                }
-
-                context.cancelEvent();
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        context.cancelEvent();
     }
 }

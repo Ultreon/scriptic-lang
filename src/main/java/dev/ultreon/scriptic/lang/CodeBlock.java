@@ -3,9 +3,8 @@ package dev.ultreon.scriptic.lang;
 import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.ScripticLang;
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEvent;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
+import dev.ultreon.scriptic.lang.obj.Effect;
+import dev.ultreon.scriptic.lang.obj.Event;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -18,18 +17,19 @@ public final class CodeBlock implements Closeable {
     public static final Identifier CTX_LAST_EFFECT = ScripticLang.id("effect/last_effect");
     public static final Identifier CTX_LAST_IF_SUCCEEDED = ScripticLang.id("effect/last/if/succeeded");
     private final @Nullable CodeBlock parent;
-    private final List<CEffect> contents;
+    private final List<Effect> contents;
     private final CodeContext context;
     private final Runnable popBlock;
     private final boolean breakable;
     private boolean executing;
-    private CEffect lastEffect;
-    private CEffect currentEffect;
-    private CValue<?> lastExprValue;
+    private Effect lastEffect;
+    private Effect currentEffect;
+    private Object lastExprValue;
     private IfStatement ifStatement;
     private String answer = null;
+    private Type lastType;
 
-    CodeBlock(@Nullable CodeBlock parent, List<CEffect> contents, CodeContextImpl context, Runnable popBlock) {
+    CodeBlock(@Nullable CodeBlock parent, List<Effect> contents, CodeContextImpl context, Runnable popBlock) {
         this.parent = parent;
         this.contents = contents;
         this.context = context;
@@ -39,7 +39,7 @@ public final class CodeBlock implements Closeable {
         context.setCurrentBlock(this);
     }
 
-    CodeBlock(@Nullable CodeBlock parent, List<CEffect> contents, boolean breakable, CodeContext context, Runnable popBlock) {
+    CodeBlock(@Nullable CodeBlock parent, List<Effect> contents, boolean breakable, CodeContext context, Runnable popBlock) {
         this.parent = parent;
         this.contents = contents;
         this.context = context;
@@ -47,8 +47,9 @@ public final class CodeBlock implements Closeable {
         this.breakable = breakable;
     }
 
-    public static CodeBlock ofEvent(CEvent event, Map<String, Object> eventParameters, List<CEffect> content) {
-        return new CodeBlock(null, content, new CodeContextImpl(event, eventParameters), () -> {});
+    public static CodeBlock ofEvent(Event event, Map<String, Object> eventParameters, List<Effect> content) {
+        return new CodeBlock(null, content, new CodeContextImpl(event, eventParameters), () -> {
+        });
     }
 
     public void invoke() throws ScriptException {
@@ -58,7 +59,7 @@ public final class CodeBlock implements Closeable {
         this.executing = true;
 
         try {
-            for (CEffect effect : contents) {
+            for (Effect effect : contents) {
                 this.lastEffect = currentEffect;
                 this.currentEffect = effect;
                 if (this.ifStatement != null) {
@@ -80,7 +81,7 @@ public final class CodeBlock implements Closeable {
         return parent;
     }
 
-    public List<CEffect> contents() {
+    public List<Effect> contents() {
         return contents;
     }
 
@@ -94,8 +95,8 @@ public final class CodeBlock implements Closeable {
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (CodeBlock) obj;
         return Objects.equals(this.parent, that.parent) &&
-                Objects.equals(this.contents, that.contents) &&
-                Objects.equals(this.context, that.context);
+               Objects.equals(this.contents, that.contents) &&
+               Objects.equals(this.context, that.context);
     }
 
     @Override
@@ -106,20 +107,20 @@ public final class CodeBlock implements Closeable {
     @Override
     public String toString() {
         return "CodeBlock[" +
-                "parent=" + parent + ", " +
-                "contents=" + contents + ", " +
-                "context=" + context + ']';
+               "parent=" + parent + ", " +
+               "contents=" + contents + ", " +
+               "context=" + context + ']';
     }
 
-    public CEffect getLastEffect() {
+    public Effect getLastEffect() {
         return lastEffect;
     }
 
-    public void setLastExprValue(CValue<?> value) {
+    public void setLastExprValue(Object value) {
         this.lastExprValue = value;
     }
 
-    public CValue<?> getLastExprValue() {
+    public Object getLastExprValue() {
         return lastExprValue;
     }
 
@@ -146,5 +147,25 @@ public final class CodeBlock implements Closeable {
 
     public boolean isBreakable() {
         return breakable;
+    }
+
+    public void setLastEffect(Effect lastEffect) {
+        this.lastEffect = lastEffect;
+    }
+
+    public void setCurrentEffect(Effect currentEffect) {
+        this.currentEffect = currentEffect;
+    }
+
+    public Effect getCurrentEffect() {
+        return currentEffect;
+    }
+
+    public void setLastType(Type type) {
+        this.lastType = type;
+    }
+
+    public Type getLastType() {
+        return lastType;
     }
 }

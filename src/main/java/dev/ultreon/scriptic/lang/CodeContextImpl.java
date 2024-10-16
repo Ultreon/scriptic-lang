@@ -1,7 +1,7 @@
 package dev.ultreon.scriptic.lang;
 
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
-import dev.ultreon.scriptic.lang.obj.compiled.CEvent;
+import dev.ultreon.scriptic.lang.obj.Effect;
+import dev.ultreon.scriptic.lang.obj.Event;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,10 +12,10 @@ public class CodeContextImpl implements CodeContext {
     private final Stack<CodeBlock> blockStack = new Stack<>();
     private final Map<CodeBlock, IfStatement> ifs = new HashMap<>();
     private final Map<String, Object> eventParameters;
-    private CEffect lastEffect;
-    private CEvent event;
+    private Effect lastEffect;
+    private Event event;
 
-    public CodeContextImpl(CEvent event, Map<String, Object> eventParameters) {
+    public CodeContextImpl(Event event, Map<String, Object> eventParameters) {
         this.event = event;
         this.eventParameters = eventParameters;
     }
@@ -36,18 +36,18 @@ public class CodeContextImpl implements CodeContext {
     }
 
     @Override
-    public void setLastEffect(CEffect cEffect) {
-        this.lastEffect = cEffect;
+    public void setLastEffect(Effect effect) {
+        this.getCurrentBlock().setLastEffect(effect);
     }
 
     @Override
-    public CEffect getLastEffect() {
+    public Effect getLastEffect() {
         return lastEffect;
     }
 
     @Override
     public CodeBlock getCurrentBlock() {
-        return blockStack.peek();
+        return blockStack.isEmpty() ? null : blockStack.peek();
     }
 
     @Override
@@ -66,23 +66,28 @@ public class CodeContextImpl implements CodeContext {
     }
 
     @Override
-    public IfStatement getIfStatment(CodeBlock codeBlock) {
+    public IfStatement getIfEffect(CodeBlock codeBlock) {
         return ifs.get(codeBlock);
     }
 
     @Override
-    public void setIfStatment(CodeBlock codeBlock, IfStatement ifStatement) {
+    public void setIfEffect(CodeBlock codeBlock, IfStatement ifStatement) {
         ifs.put(codeBlock, ifStatement);
     }
 
     @Override
-    public boolean isEventCancellable() {
-        return event.isCancellable();
+    public boolean isEventCancelable() {
+        return event.isCancelable();
     }
 
     @Override
     public <T> T getEventParameter(String name, Class<T> type) {
         return type.cast(eventParameters.get(name));
+    }
+
+    @Override
+    public void setLastType(Type type) {
+        this.getCurrentBlock().setLastType(type);
     }
 
     void setCurrentBlock(CodeBlock codeBlock) {

@@ -1,9 +1,11 @@
 package dev.ultreon.scriptic.lang;
 
-import dev.ultreon.scriptic.lang.obj.compiled.CEffect;
+import dev.ultreon.scriptic.lang.obj.Effect;
+import dev.ultreon.scriptic.lang.obj.Event;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CodeContext {
     @ApiStatus.Internal
@@ -14,9 +16,9 @@ public interface CodeContext {
     @ApiStatus.Internal
     void endLoop();
 
-    void setLastEffect(CEffect cEffect);
+    void setLastEffect(Effect effect);
 
-    CEffect getLastEffect();
+    Effect getLastEffect();
 
     CodeBlock getCurrentBlock();
 
@@ -28,22 +30,28 @@ public interface CodeContext {
 
     void cancelEvent();
 
-    IfStatement getIfStatment(CodeBlock codeBlock);
+    IfStatement getIfEffect(CodeBlock codeBlock);
 
-    void setIfStatment(CodeBlock codeBlock, IfStatement ifStatement);
+    void setIfEffect(CodeBlock codeBlock, IfStatement ifStatement);
 
-    default CodeBlock pushBlock(List<CEffect> blockEffect) {
+    default CodeBlock pushBlock(List<Effect> blockEffect) {
         return pushBlock(blockEffect, false);
     }
 
-    default CodeBlock pushBlock(List<CEffect> blockEffect, boolean breakable) {
+    default CodeBlock pushBlock(List<Effect> blockEffect, boolean breakable) {
         CodeBlock block = new CodeBlock(getCurrentBlock(), blockEffect, breakable, this, this::popBlock);
         pushBlock(block);
 
         return block;
     }
 
-    boolean isEventCancellable();
+    boolean isEventCancelable();
 
     <T> T getEventParameter(String name, Class<T> type);
+
+    static CodeContext of(Event event, Map<String, Object> eventParameters) {
+        return new CodeContextImpl(event, eventParameters);
+    }
+
+    void setLastType(Type type);
 }

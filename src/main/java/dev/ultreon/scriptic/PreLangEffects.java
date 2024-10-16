@@ -1,18 +1,18 @@
 package dev.ultreon.scriptic;
 
-import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.impl.effect.CommentEffect;
 import dev.ultreon.scriptic.lang.obj.Effect;
+import org.intellij.lang.annotations.RegExp;
+
+import java.util.function.Supplier;
 
 public class PreLangEffects {
-    public static final CommentEffect COMMENT = register(ScripticLang.id("comment"), new CommentEffect());
-
-    private static <T extends Effect> T register(Identifier name, T effect) {
-        Registries.EFFECTS.register(name, effect);
-        return effect;
+    @SuppressWarnings("unchecked")
+    private static <T extends Effect> void register(@RegExp String name, Supplier<T> effect, T... typeGetter) {
+        Registries.EFFECTS.register(name, (Supplier<Effect>) effect, (Class<Effect>) typeGetter.getClass().getComponentType());
     }
 
     public static void init() {
-        // Initialize class
+        register(CommentEffect.PATTERN, CommentEffect::new);
     }
 }

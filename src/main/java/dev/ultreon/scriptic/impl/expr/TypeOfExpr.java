@@ -5,72 +5,52 @@ import dev.ultreon.scriptic.Registries;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class TypeOfExpr extends Expr {
+public class TypeOfExpr extends Expr<Object> {
     @SuppressWarnings("rawtypes")
     private static final Map<Class<?>, Consumer> REGISTRY = new HashMap<>();
+    public static final String PATTERN = "^(the |)type of (?<expr>.+)$";
+    private @UnknownNullability Expr<Object> expr;
+
+    public TypeOfExpr() {
+        super(Object.class);
+    }
 
     @SafeVarargs
     public static <T> void register(Consumer<? super T> consumer, T... typeGetter) {
         REGISTRY.put(typeGetter.getClass().getComponentType(), consumer);
     }
 
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(the |)type of (?<expr>.+)$");
-    }
-
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var pattern = getPattern();
-
-        var matcher = pattern.matcher(code);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid code: " + code);
-        }
+    public void load(int lineNr, Matcher matcher) throws CompileException {
         final var exprCode = matcher.group("expr");
-        final var expr = Registries.compileExpr(lineNr, new Parser(exprCode));
+        expr = Registries.compileExpr(lineNr, new Parser(exprCode));
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @SuppressWarnings("unchecked")
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                var eval = expr.eval(context);
-                var o = eval.get();
+    @Override
+    public @NotNull Object eval(CodeContext context) throws ScriptException {
+        expr.eval(context);
 
-                if (o == null) {
-                    throw new IllegalArgumentException("Cannot delete nothing, got " + expr);
-                }
-
-                for (var entry : REGISTRY.entrySet()) {
-                    if (entry.getKey().isInstance(o)) {
-                        entry.getValue().accept(o);
-                    }
-                }
-
-
-                throw new IllegalArgumentException("Can't find the type of that object, got expression: " + exprCode);
+        for (var entry : REGISTRY.entrySet()) {
+            if (entry.getKey().isInstance(expr.eval(context))) {
+                entry.getValue().accept(expr.eval(context));
             }
+        }
 
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+        throw new IllegalArgumentException("Can't find the type of that object, got expression: " + expr);
     }
 }

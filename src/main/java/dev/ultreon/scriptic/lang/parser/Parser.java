@@ -8,6 +8,9 @@ public class Parser {
 
     public Parser(String code) {
         this.code = code.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+        if (code.trim().isEmpty()) {
+            throw new IllegalArgumentException("Code cannot be empty!");
+        }
 //        System.out.println("code = " + code);
     }
 
@@ -410,5 +413,15 @@ public class Parser {
             i--;
         }
         return count;
+    }
+
+    public String getRow(int row) {
+        String code = this.code;
+        String[] split = this.code.lines().toList().toArray(new String[0]);
+        if (row < 1 || row > split.length) {
+            return "";
+        }
+
+        return split[row - 1];
     }
 }

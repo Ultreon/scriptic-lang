@@ -4,40 +4,34 @@ import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Expr;
-import dev.ultreon.scriptic.lang.obj.compiled.CExpr;
-import dev.ultreon.scriptic.lang.obj.compiled.CValue;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-public class NumberExpr extends Expr {
-    @Override
-    public Pattern getPattern() {
-        return Pattern.compile("^(?<number>\\d+)$");
+public class NumberExpr extends Expr<Number> {
+
+    public static final String PATTERN = "^(?<number>\\d+)$";
+
+    public NumberExpr() {
+        super(Number.class);
     }
 
     /**
      * Compiles a piece of code for this expression.
      *
-     * @param lineNr the line number of the code.
-     * @param code   the code.
-     * @return the compiled code.
+     * @param lineNr  the line number of the code.
+     * @param matcher
      */
     @Override
-    public CExpr compile(int lineNr, String code) throws CompileException {
-        var parser = new Parser(code);
+    public void load(int lineNr, Matcher matcher) throws CompileException {
+        var parser = new Parser(code());
         var s = parser.readNumber();
+    }
 
-        return new CExpr(this, code, lineNr) {
-            @Override
-            public CValue<?> calc(CodeContext context) throws ScriptException {
-                return new CValue<>(s.toBigInteger());
-            }
-
-            @Override
-            public String toString() {
-                return code;
-            }
-        };
+    @Override
+    public @NotNull Number eval(CodeContext context) throws ScriptException {
+        var parser = new Parser(code());
+        return parser.readNumber();
     }
 }
