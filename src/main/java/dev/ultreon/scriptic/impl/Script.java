@@ -5,7 +5,9 @@ import dev.ultreon.scriptic.*;
 import dev.ultreon.scriptic.impl.struct.EventStruct;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.obj.Event;
+import dev.ultreon.scriptic.lang.obj.Struct;
 import dev.ultreon.scriptic.lang.parser.Parser;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -14,11 +16,13 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class Script {
     private final Path filePath;
     private final List<EventStruct> compiledEvents = new ArrayList<>();
+    private final List<Struct<?>> compiledStructs = new ArrayList<>();
     private final Map<String, Object> rootProperties;
 
     private static final Map<Path, Script> scripts = new HashMap<>();
@@ -27,9 +31,15 @@ public class Script {
 
     private static Logger logger = new StdOutLogger();
     private boolean compiled;
+    private @NotNull String[] args;
 
     private Script(Path filePath, ScriptEngine engine) throws IOException {
+        this(filePath, engine, new String[0]);
+    }
+
+    private Script(Path filePath, ScriptEngine engine, @NotNull String[] args) throws IOException {
         this.filePath = filePath;
+        this.args = args;
 
         if (!Files.exists(filePath, LinkOption.NOFOLLOW_LINKS)) {
             throw new IOException("Script file doesn't exist, or is symlinked.");
@@ -102,10 +112,14 @@ public class Script {
     }
 
     private static void importFileStream(Stream<Path> fileStream, ScriptEngine engine) throws ScriptException, CompileException {
+        importFileStream(fileStream, engine, new String[0]);
+    }
+
+    private static void importFileStream(Stream<Path> fileStream, ScriptEngine engine, String[] args) throws ScriptException, CompileException {
         ScriptException e = null;
         for (var file : Objects.requireNonNull(fileStream.toArray(Path[]::new))) {
             try {
-                importFromPath(file, engine);
+                importFromPath(file, engine, args);
             } catch (IOException ioException) {
                 if (e == null) e = new ScriptException("Script errors occurred");
 
@@ -118,11 +132,15 @@ public class Script {
     }
 
     private static @Nullable Script importFromPath(Path path, ScriptEngine engine) throws IOException, ScriptException, CompileException {
+        return importFromPath(path, engine, new String[0]);
+    }
+
+    private static @Nullable Script importFromPath(Path path, ScriptEngine engine, String[] args) throws IOException, ScriptException, CompileException {
         if (Files.isRegularFile(path) && (path.getFileName().endsWith(".sc") || path.getFileName().endsWith(".txt"))) {
             if (Files.isExecutable(path)) {
                 ScripticLang.getLogger().debug("Importing script: %s".formatted(path.toString()));
                 try {
-                    Script script = new Script(path, engine);
+                    Script script = new Script(path, engine, args);
                     script.invoke();
                     return script;
                 } catch (RuntimeException e) {
@@ -135,14 +153,14 @@ public class Script {
         return null;
     }
 
-    static Script importScript(Path path, ScriptEngine engine) throws IOException, CompileException {
-        Script script = new Script(path, engine);
+    static Script importScript(Path path, ScriptEngine engine, String[] args) throws IOException, CompileException {
+        Script script = new Script(path, engine, args);
         script.compile();
         return script;
     }
 
-    static Script importScript(String path, ScriptEngine engine) throws IOException, CompileException {
-        return importScript(Path.of(path), engine);
+    static Script importScript(String path, ScriptEngine engine, String[] args) throws IOException, CompileException {
+        return importScript(Path.of(path), engine, args);
     }
 
     public static boolean isDefaultProperty(Identifier name) {
@@ -162,13 +180,15 @@ public class Script {
 
         while (!parser.isEOF()) {
             int row = parser.row();
-            var compiled = Registries.compileEvent(row, parser);
+            var compiled = Registries.compileStruct(row, parser);
             if (compiled == null) {
-                throw new CompileException("Failed to compile event", row);
+                continue;
             }
-            compiled.preload(row, parser.getRow(row));
-            compiledEvents.add(compiled);
-            compiled.load(row, null);
+            if (compiled instanceof EventStruct) {
+                compiledEvents.add((EventStruct) compiled);
+            } else {
+                compiledStructs.add(compiled);
+            }
         }
 
         this.compiled = true;
@@ -204,7 +224,7 @@ public class Script {
     private void invokeEventInternal(Event event, Map<String, Object> properties) throws ScriptException {
         for (EventStruct evt : compiledEvents) {
             if (evt.getEventType() == event) {
-                evt.invoke(CodeContext.of(event, properties));
+                evt.invoke(CodeContext.of(evt, event, properties, args));
             }
         }
     }

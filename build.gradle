@@ -4,8 +4,13 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'io.github.xypercode'
+group = 'dev.ultreon'
 version = '0.1-SNAPSHOT'
+
+base {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 repositories {
     mavenCentral()

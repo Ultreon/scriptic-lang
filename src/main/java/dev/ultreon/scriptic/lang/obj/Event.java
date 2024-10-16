@@ -3,9 +3,11 @@ package dev.ultreon.scriptic.lang.obj;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.ScripticLang;
+import dev.ultreon.scriptic.impl.struct.EventStruct;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.LangObject;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -45,8 +47,8 @@ public class Event extends LangObject<Event> {
         return true;
     }
 
-    public void invoke(Map<String, Object> parameters) throws ScriptException {
-        invoke(CodeContext.of(this, parameters));
+    public void invoke(EventStruct struct, Map<String, Object> parameters, @NotNull String[] scriptArguments) throws ScriptException {
+        invoke(CodeContext.of(struct, this, parameters, scriptArguments));
     }
 
     @Override

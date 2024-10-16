@@ -5,6 +5,9 @@ import dev.ultreon.scriptic.impl.Logger;
 import dev.ultreon.scriptic.impl.StdOutLogger;
 import dev.ultreon.scriptic.lang.Type;
 import dev.ultreon.scriptic.lang.obj.Event;
+import dev.ultreon.scriptic.lang.obj.JavaTimeUnit;
+import dev.ultreon.scriptic.lang.obj.TimeUnitLike;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -12,6 +15,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public class ScripticLang {
+    private static final Map<String, TimeUnitLike> TIME_UNIT_REGISTRY = new HashMap<>();
     private static Logger logger = new StdOutLogger();
 
     private static final Map<Class<? extends Event>, Event> events = new HashMap<>();
@@ -28,6 +32,7 @@ public class ScripticLang {
         LangTypes.init();
         LangEffects.init();
         LangExpressions.init();
+        LangStructs.init();
     }
 
     public static Identifier id(String path) {
@@ -42,12 +47,12 @@ public class ScripticLang {
         ScripticLang.logger = logger;
     }
 
-    public static void registerEvent(String pattern, Event event) {
+    public static void registerEvent(@Language("regexp") String pattern, Event event) {
         events.put(event.getClass(), event);
         eventPatterns.put(pattern, event);
     }
 
-    public static void registerType(String pattern, String name, Type type) {
+    public static void registerType(@Language("regexp") String pattern, String name, Type type) {
         types.put(pattern, type);
         typeNames.put(type.getType(), name);
     }
@@ -77,7 +82,7 @@ public class ScripticLang {
 
     public static String getPatternForEvent(Event event) {
         for (Map.Entry<String, Event> entry : eventPatterns.entrySet()) {
-            if (Pattern.matches(entry.getKey(), event.getPattern().pattern()))
+            if (entry.getValue() == event)
                 return entry.getKey();
         }
         return null;
@@ -89,5 +94,25 @@ public class ScripticLang {
                 return entry.getValue();
         }
         return null;
+    }
+
+    public static TimeUnitLike getTimeUnit(String unitGroup) {
+        if (TIME_UNIT_REGISTRY.isEmpty()) {
+            getLogger().warn("Time unit registry is empty! Fallback to Java time unit");
+
+            registerTimeUnits(JavaTimeUnit.class);
+        }
+
+        for (Map.Entry<String, TimeUnitLike> entry : TIME_UNIT_REGISTRY.entrySet()) {
+            if (Pattern.matches(entry.getKey(), unitGroup.toLowerCase()))
+                return entry.getValue();
+        }
+        return null;
+    }
+
+    public static <T extends Enum<T> & TimeUnitLike> void registerTimeUnits(Class<T> unit) {
+        for (T unitEnum : unit.getEnumConstants()) {
+            TIME_UNIT_REGISTRY.put(unitEnum.name().toLowerCase(), unitEnum);
+        }
     }
 }

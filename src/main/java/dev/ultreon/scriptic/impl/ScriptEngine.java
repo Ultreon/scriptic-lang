@@ -25,8 +25,8 @@ public final class ScriptEngine {
         Script.importScripts(this);
     }
 
-    public Script importScript(Path path) throws ScriptException, CompileException, IOException {
-        return Script.importScript(path, this);
+    public Script importScript(Path path, String... args) throws ScriptException, CompileException, IOException {
+        return Script.importScript(path, this, args);
     }
 
     public static class Builder {

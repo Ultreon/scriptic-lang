@@ -2,6 +2,9 @@ package dev.ultreon.scriptic.lang;
 
 import dev.ultreon.scriptic.lang.obj.Effect;
 import dev.ultreon.scriptic.lang.obj.Event;
+import dev.ultreon.scriptic.lang.obj.Struct;
+import dev.ultreon.scriptic.lang.obj.TimerLike;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,12 +15,16 @@ public class CodeContextImpl implements CodeContext {
     private final Stack<CodeBlock> blockStack = new Stack<>();
     private final Map<CodeBlock, IfStatement> ifs = new HashMap<>();
     private final Map<String, Object> eventParameters;
+    private final @NotNull String[] scriptArguments;
+    private final Struct<?> structure;
     private Effect lastEffect;
+    private TimerLike timer;
     private Event event;
 
-    public CodeContextImpl(Event event, Map<String, Object> eventParameters) {
-        this.event = event;
+    public CodeContextImpl(Struct<?> structure, Event event, Map<String, Object> eventParameters, @NotNull String[] scriptArguments) {
+        this.structure = structure;
         this.eventParameters = eventParameters;
+        this.scriptArguments = scriptArguments;
     }
 
     @Override
@@ -62,7 +69,12 @@ public class CodeContextImpl implements CodeContext {
 
     @Override
     public void cancelEvent() {
-        this.event.cancel();
+        if (this.event != null) {
+            this.event.cancel();
+            return;
+        }
+
+        throw new IllegalStateException("Not in an event");
     }
 
     @Override
@@ -77,7 +89,10 @@ public class CodeContextImpl implements CodeContext {
 
     @Override
     public boolean isEventCancelable() {
-        return event.isCancelable();
+        if (this.event != null) {
+            return this.event.isCancelable();
+        }
+        return false;
     }
 
     @Override
@@ -90,7 +105,26 @@ public class CodeContextImpl implements CodeContext {
         this.getCurrentBlock().setLastType(type);
     }
 
+    @Override
+    public @NotNull String[] getScriptArguments() {
+        return scriptArguments;
+    }
+
+    @Override
+    public void setTimer(TimerLike timer) {
+        this.timer = timer;
+    }
+
     void setCurrentBlock(CodeBlock codeBlock) {
         blockStack.push(codeBlock);
+    }
+
+    @Override
+    public TimerLike getTimer() {
+        return timer;
+    }
+
+    public Struct<?> getStructure() {
+        return structure;
     }
 }

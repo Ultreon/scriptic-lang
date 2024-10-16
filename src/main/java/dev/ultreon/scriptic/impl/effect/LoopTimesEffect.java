@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
 
 public class LoopTimesEffect extends Effect {
     @RegExp
-    public static final String PATTERN = "^(loop|repeat) (?<amountExpr>.+)( times|x|⨉):$";
+    public static final String PATTERN = "^(loop|repeat) (?<amountExpr>.+)( times|x|⨉)(:?)$";
     private @UnknownNullability Expr<?> amountText;
 
     /**

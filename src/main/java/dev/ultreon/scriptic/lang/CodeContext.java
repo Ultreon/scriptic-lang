@@ -1,8 +1,9 @@
 package dev.ultreon.scriptic.lang;
 
-import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.Event;
+import dev.ultreon.scriptic.impl.struct.EventStruct;
+import dev.ultreon.scriptic.lang.obj.*;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -49,9 +50,19 @@ public interface CodeContext {
 
     <T> T getEventParameter(String name, Class<T> type);
 
-    static CodeContext of(Event event, Map<String, Object> eventParameters) {
-        return new CodeContextImpl(event, eventParameters);
+    static CodeContext of(EventStruct eventStruct, Event event, Map<String, Object> eventParameters, @NotNull String[] scriptArguments) {
+        return new CodeContextImpl(eventStruct, event, eventParameters, scriptArguments);
+    }
+
+    static CodeContext of(Struct<?> struct) {
+        return new CodeContextImpl(struct, null, null, null);
     }
 
     void setLastType(Type type);
+
+    @NotNull String[] getScriptArguments();
+
+    void setTimer(TimerLike timer);
+
+    TimerLike getTimer();
 }

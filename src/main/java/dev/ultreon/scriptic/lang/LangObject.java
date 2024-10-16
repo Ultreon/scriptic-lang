@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public abstract class LangObject<T extends LangObject<T>> {
     private String code;
     protected String block;
-    private List<Effect> blockEffect;
+    protected List<Effect> blockEffect;
     private int lineNr;
     private Pattern pattern;
 

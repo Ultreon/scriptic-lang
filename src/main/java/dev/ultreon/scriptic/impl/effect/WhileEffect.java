@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 
 public class WhileEffect extends Effect {
     @RegExp
-    public static final String PATTERN = "^(while|until|loop( while)|repeat) (?<condition>.+)$";
+    public static final String PATTERN = "^(while|until|loop( while)|repeat) (?<condition>.+)(:?)$";
     private Expr<Boolean> conditionExpr;
 
     /**

@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 class ScriptTests {
+    private String[] args;
+
     @Test
     void mainScript() {
         ScripticLang.preInit();
@@ -25,43 +27,48 @@ class ScriptTests {
         Script.setLogger(new Logger() {
             @Override
             public void debug(String message) {
-                System.out.println("[DEBUG] " + message);
+                System.err.println("[DEBUG] " + message);
             }
 
             @Override
             public void info(String message) {
-                System.out.println("[INFO] " + message);
+                System.err.println("[INFO] " + message);
             }
 
             @Override
             public void error(String message) {
-                System.out.println("[ERROR] " + message);
+                System.err.println("[ERROR] " + message);
             }
 
             @Override
             public void error(String message, Throwable e) {
-                System.out.println("[ERROR] " + message);
+                System.err.println("[ERROR] " + message);
 
                 e.printStackTrace();
             }
 
             @Override
             public void warn(String message) {
-                System.out.println("[WARN] " + message);
+                System.err.println("[WARN] " + message);
             }
 
             @Override
             public void warn(String message, Throwable e) {
-                System.out.println("[WARN] " + message);
+                System.err.println("[WARN] " + message);
 
                 e.printStackTrace();
+            }
+
+            @Override
+            public void print(String message) {
+                System.out.println(message);
             }
         });
 
         ScriptEngine engine = ScriptEngine.builder().build();
 
         try {
-            Script script = engine.importScript(Paths.get("main.txt"));
+            Script script = engine.importScript(Paths.get("main.txt"), args);
             script.invoke();
         } catch (CompileException | ScriptException | IOException e) {
             Assertions.fail(e);
@@ -70,18 +77,16 @@ class ScriptTests {
 
     public static void main(String[] args) {
         try {
-            new ScriptTests().mainScript();
+            ScriptTests scriptTests = new ScriptTests();
+            scriptTests.args = args;
+            scriptTests.mainScript();
+            System.exit(0);
         } catch (AssertionFailedError e) {
             Throwable cause = e.getCause();
             if (cause instanceof ScriptException || cause instanceof CompileException) {
                 System.err.println("Error: " + cause.getMessage());
             }
-        }
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            System.exit(1);
         }
     }
 

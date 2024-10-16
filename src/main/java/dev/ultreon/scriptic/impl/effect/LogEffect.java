@@ -39,6 +39,6 @@ public class LogEffect extends Effect {
         if (!(eval instanceof String string)) {
             throw new ScriptException("Expected to get text, but got " + ScripticLang.getTypeName(eval.getClass()));
         }
-        Script.getLogger().info(string);
+        Script.getLogger().print(string);
     }
 }

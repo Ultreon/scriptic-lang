@@ -1,10 +1,10 @@
 package dev.ultreon.scriptic;
 
-import dev.ultreon.scriptic.impl.struct.EventStruct;
 import dev.ultreon.scriptic.lang.Type;
 import dev.ultreon.scriptic.lang.obj.Effect;
 import dev.ultreon.scriptic.lang.obj.Event;
 import dev.ultreon.scriptic.lang.obj.Expr;
+import dev.ultreon.scriptic.lang.obj.Struct;
 import dev.ultreon.scriptic.lang.parser.Parser;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 public class Registries {
     public static final Registry<Type> TYPES = Registry.create(new Identifier("scriptic_lang", "type"));
+    public static final Registry<Struct<?>> STRUCTS = Registry.create(new Identifier("scriptic_lang", "structure"));
     public static final Registry<Expr<?>> EXPRESSIONS = Registry.create(new Identifier("scriptic_lang", "expression"));
     public static final Registry<Effect> EFFECTS = Registry.create(new Identifier("scriptic_lang", "effect"));
 
@@ -94,25 +95,48 @@ public class Registries {
      * @param parser the parser instance for the code.
      * @return the compiled expression.
      */
-    public static @Nullable EventStruct compileEvent(int lineNr, Parser parser) throws CompileException {
+    public static @Nullable Struct<?> compileStruct(int lineNr, Parser parser) throws CompileException {
         var parsed = parser.readLine();
 
         if (parsed.isBlank()) {
             return null;
         }
-        if (Pattern.matches("^on .+:?$", parsed)) {
-            var eventExpr = parsed.substring(0, parsed.length() - 1);
-            @Nullable Event detected = detectEvent(eventExpr);
-            if (detected == null) {
-                throw new CompileException("Invalid event: " + parsed, lineNr, parser.col());
-            }
 
-            var block = parser.readIndentedBlock();
-
-            return new EventStruct(detected, block);
-        } else {
-            throw new CompileException("Expected to find a colon at the end of the line, which means it's a event.", parser.row(), parser.col());
+        @Nullable Struct detected = detectStruct(parsed);
+        if (detected == null) {
+            throw new CompileException("Unknown structure: " + parsed, lineNr, parser.col());
         }
+
+        var block = parser.readIndentedBlock();
+        detected.preload(lineNr, parsed);
+        if (detected.requiresBlock()) {
+            if (block.isBlank()) {
+                throw new CompileException("Missing block for struct: " + parsed, lineNr, parser.col());
+            }
+            detected.loadBlock(lineNr, block);
+        }
+        Matcher matcher = Pattern.compile(detected.getRegistryName()).matcher(parsed);
+        if (!matcher.matches()) {
+            throw new CompileException("Invalid structure format: " + parsed, lineNr, parser.col());
+        }
+        detected.load(lineNr, matcher);
+        if (detected.getDetected() == null) {
+            throw new CompileException("Invalid structure: " + parsed, lineNr, parser.col());
+        }
+
+        return detected;
+    }
+
+    private static @Nullable Struct detectStruct(String parsed) {
+        var keys = STRUCTS.keys();
+        @Nullable Struct detected = null;
+        for (var key : keys) {
+            if (Pattern.matches(key, parsed)) {
+                detected = STRUCTS.create(key);
+                break;
+            }
+        }
+        return detected;
     }
 
     /**
@@ -160,7 +184,7 @@ public class Registries {
      * @return the detected expression.
      */
     @Nullable
-    private static Event detectEvent(String code) {
+    public static Event detectEvent(String code) {
         return ScripticLang.getEvent(code);
     }
 
@@ -173,7 +197,7 @@ public class Registries {
         return compileEffect(lineNr, new Parser(effect));
     }
 
-    public static EventStruct compileEvent(int lineNr, String event) throws CompileException {
-        return compileEvent(lineNr, new Parser(event));
+    public static Struct<?> compileStruct(int lineNr, String event) throws CompileException {
+        return compileStruct(lineNr, new Parser(event));
     }
 }

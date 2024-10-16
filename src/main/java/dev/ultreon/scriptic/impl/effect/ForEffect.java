@@ -12,17 +12,16 @@ import dev.ultreon.scriptic.lang.parser.Parser;
 import org.intellij.lang.annotations.RegExp;
 import org.jetbrains.annotations.UnknownNullability;
 
+import java.lang.reflect.Array;
 import java.util.Iterator;
-import java.util.List;
 import java.util.regex.Matcher;
 
 public class ForEffect extends Effect {
     @RegExp
-    public static final String PATTERN = "^for[ -](every|each) (?<type>.+) (?<iterator>.+):$";
+    public static final String PATTERN = "^for[ -](every|each) (?<type>.+) in (?<iterator>.+)(:?)$";
     private int lineNr;
     private Type type;
-    private @UnknownNullability Expr iteratorExpr;
-    private List<Effect> blockEffect;
+    private @UnknownNullability Expr<?> iteratorExpr;
 
     /**
      * Compiles a piece of code for this effect.
@@ -35,7 +34,6 @@ public class ForEffect extends Effect {
         this.lineNr = lineNr;
         type = Registries.getTypeFor(matcher.group("type"));
         iteratorExpr = Registries.compileExpr(lineNr, new Parser(matcher.group("iterator")));
-        blockEffect = Effect.bulkCompile(lineNr, block);
     }
 
     @Override
@@ -48,6 +46,8 @@ public class ForEffect extends Effect {
             iterator = iterable.iterator();
         } else if (o instanceof Iterator<?> iterator1) {
             iterator = iterator1;
+        } else if (o.getClass().isArray()) {
+            iterator = new ArrayIterator(o);
         } else {
             throw new ScriptException("Expected to get iterator, but got " + o.getClass().getSimpleName(), lineNr);
         }
@@ -68,5 +68,24 @@ public class ForEffect extends Effect {
     @Override
     public boolean requiresBlock() {
         return true;
+    }
+
+    private class ArrayIterator implements Iterator<Object> {
+        private final Object o;
+        private int index = 0;
+
+        public ArrayIterator(Object o) {
+            this.o = o;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < Array.getLength(o);
+        }
+
+        @Override
+        public Object next() {
+            return Array.get(o, index++);
+        }
     }
 }

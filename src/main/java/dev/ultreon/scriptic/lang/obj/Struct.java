@@ -4,20 +4,20 @@ import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;
 import dev.ultreon.scriptic.lang.LangObject;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.regex.Matcher;
 
-public abstract class Struct<T extends LangObject<T>> extends LangObject<Struct<T>> {
-    private final T detected;
-    private final String block;
+public abstract class Struct<T extends LangObject<T>> extends LangObject<Struct<?>> {
+    private T detected;
     private List<Effect> content;
 
-    public Struct(@NotNull T detected, String block) {
-        this.detected = detected;
-        this.block = block;
+    public Struct() {
+
     }
+
+    public abstract @Nullable T detect();
 
     public T getDetected() {
         return detected;
@@ -25,6 +25,18 @@ public abstract class Struct<T extends LangObject<T>> extends LangObject<Struct<
 
     public String getBlock() {
         return block;
+    }
+
+    @Override
+    public final void preload(int lineNr, String code) {
+        super.preload(lineNr, code);
+
+        T detect = detect();
+        if (detect == null) {
+            throw new IllegalArgumentException("Structure could not be detected: " + code);
+        }
+
+        detected = detect;
     }
 
     @Override
@@ -36,6 +48,8 @@ public abstract class Struct<T extends LangObject<T>> extends LangObject<Struct<
         if (content.isEmpty()) {
             throw new IllegalArgumentException("No effects found in struct: " + block);
         }
+
+        this.registerListener();
     }
 
     @Override
@@ -46,5 +60,13 @@ public abstract class Struct<T extends LangObject<T>> extends LangObject<Struct<
             effect.invoke(context);
         }
         context.popBlock();
+    }
+
+    public boolean requiresBlock() {
+        return true;
+    }
+
+    public void registerListener() {
+
     }
 }

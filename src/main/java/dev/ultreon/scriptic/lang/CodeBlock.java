@@ -4,12 +4,11 @@ import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.ScripticLang;
 import dev.ultreon.scriptic.lang.obj.Effect;
-import dev.ultreon.scriptic.lang.obj.Event;
+import dev.ultreon.scriptic.lang.obj.TimerLike;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public final class CodeBlock implements Closeable {
@@ -45,11 +44,6 @@ public final class CodeBlock implements Closeable {
         this.context = context;
         this.popBlock = popBlock;
         this.breakable = breakable;
-    }
-
-    public static CodeBlock ofEvent(Event event, Map<String, Object> eventParameters, List<Effect> content) {
-        return new CodeBlock(null, content, new CodeContextImpl(event, eventParameters), () -> {
-        });
     }
 
     public void invoke() throws ScriptException {

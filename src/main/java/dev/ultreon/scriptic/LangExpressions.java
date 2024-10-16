@@ -18,9 +18,11 @@ public class LangExpressions {
         register(NumberExpr.PATTERN, NumberExpr::new);
         register(FloatingPointExpr.PATTERN, FloatingPointExpr::new);
         register(BooleanExpr.PATTERN, BooleanExpr::new);
+        register(ScriptArgumentsExpr.PATTERN, ScriptArgumentsExpr::new);
         register(VariableExpr.PATTERN, VariableExpr::new);
         register(IfElseExpr.PATTERN, IfElseExpr::new);
         register(LoopIndexExpr.PATTERN, LoopIndexExpr::new);
+        register(LoopValueExpr.PATTERN, LoopValueExpr::new);
         register(PlusExpr.PATTERN, PlusExpr::new);
         register(IsExpr.PATTERN, IsExpr::new);
         register(IsNaNExpr.PATTERN, IsNaNExpr::new);

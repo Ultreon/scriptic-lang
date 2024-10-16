@@ -14,7 +14,7 @@ import java.math.BigInteger;
 import java.util.regex.Matcher;
 
 public class PlusExpr extends Expr<Object> {
-    public static final String PATTERN = "^(?<expr1>.+) \\+ (?<expr2>.+)$";
+    public static final String PATTERN = "^(?<expr1>[^+]+) \\+ (?<expr2>.+)$";
     private @UnknownNullability Expr<Object> leftExpr;
     private @UnknownNullability Expr<Object> rightExpr;
 

@@ -13,4 +13,6 @@ public interface Logger {
     void warn(String message);
 
     void warn(String message, Throwable e);
+
+    void print(String message);
 }

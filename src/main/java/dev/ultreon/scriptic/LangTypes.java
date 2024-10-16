@@ -20,7 +20,7 @@ public class LangTypes {
         register("actual void", new Type(void.class, "an actual void"));
         register("number|int|float|num|decimal|dec|floating point( number|)", new Type(Number.class, "a number"));
         register("text|string|str", new Type(String.class, "text"));
-        register("boolean|bool|yes( ?/ ?| or )no( value|))", new Type(Number.class, "a boolean"));
+        register("boolean|bool|yes( ?/ ?| or )no( value|)", new Type(Number.class, "a boolean"));
         register("bits|bit set|bitmask", new Type(BitSet.class, "a bit set"));
         register("list|array|sequence", new Type(List.class, "a list"));
         register("set|unique list", new Type(List.class, "a set"));

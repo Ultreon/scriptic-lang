@@ -1,11 +1,17 @@
 on script init:
   ask "What is ur name?"
   assign {answer} to the answer
-  say "Hello " + {answer}
+  say "Hello %{answer}%"
 
   repeat 10 times:
     if loop-index is 5:
       break the loop
-    say "Hello " + loop-index
+    say "Hello %loop-index%"
+
+  for every text in program arguments:
+    say "Hi there %loop-value%!"
 
   say "Goodbye"
+
+every 5 seconds:
+  say "Hello"

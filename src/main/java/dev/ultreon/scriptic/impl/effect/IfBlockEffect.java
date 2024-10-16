@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 
 public class IfBlockEffect extends Effect {
     @RegExp
-    public static final String PATTERN = "^(if|when) (?<condition>.+)( then|):$";
+    public static final String PATTERN = "^(if|when) (?<condition>.+)( then|)(:?)$";
     private Expr<Boolean> conditionExpr;
 
     /**
