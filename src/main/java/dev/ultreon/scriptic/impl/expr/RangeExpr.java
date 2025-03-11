@@ -1,7 +1,5 @@
 package dev.ultreon.scriptic.impl.expr;
 
-import com.ultreon.libs.collections.v0.iterator.IntIterable;
-import com.ultreon.libs.collections.v0.iterator.IntIterator;
 import dev.ultreon.scriptic.CompileException;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.lang.CodeContext;

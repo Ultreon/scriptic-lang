@@ -36,13 +36,16 @@ public class IsNegativeExpr extends Expr<Boolean> {
     @Override
     public @NotNull Boolean eval(CodeContext context) throws ScriptException {
         Object eval = expr1.eval(context);
-        if (eval instanceof BigInteger number) {
+        if (eval instanceof BigInteger) {
+            BigInteger number = (BigInteger) eval;
             return number.signum() < 0;
         }
-        if (eval instanceof BigDecimal number) {
+        if (eval instanceof BigDecimal) {
+            BigDecimal number = (BigDecimal) eval;
             return number.signum() < 0;
         }
-        if (eval instanceof Number number) {
+        if (eval instanceof Number) {
+            Number number = (Number) eval;
             return number.doubleValue() < 0;
         }
         throw new ScriptException("Value is not a number: " + eval, getLineNr());

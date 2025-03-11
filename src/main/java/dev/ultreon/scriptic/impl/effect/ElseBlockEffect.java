@@ -11,7 +11,7 @@ import java.util.regex.Matcher;
 
 public class ElseBlockEffect extends Effect {
     @RegExp
-    public static final String PATTERN = "^else(:?)$";
+    public static final String PATTERN = "^else:$";
     private List<Effect> blockEffect;
     private int lineNr;
 

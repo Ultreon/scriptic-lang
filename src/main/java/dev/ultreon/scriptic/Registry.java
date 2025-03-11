@@ -1,8 +1,5 @@
 package dev.ultreon.scriptic;
 
-import com.ultreon.libs.collections.v0.maps.OrderedHashMap;
-import com.ultreon.libs.commons.v0.Logger;
-import com.ultreon.libs.registries.v0.exception.RegistryException;
 import dev.ultreon.scriptic.lang.LangObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,12 +11,10 @@ import java.util.regex.Pattern;
 
 
 public class Registry<T extends LangObject<T>> {
-    public static Logger dumpLogger = (level, msg, t) -> {
-    };
-    private static final OrderedHashMap<Class<?>, Registry<?>> REGISTRIES = new OrderedHashMap<>();
+    private static final Map<Class<?>, Registry<?>> REGISTRIES = new LinkedHashMap<>();
     private static boolean frozen;
-    private final OrderedHashMap<String, Supplier<T>> registryMap = new OrderedHashMap<>();
-    private final OrderedHashMap<Class<T>, String> classMap = new OrderedHashMap<>();
+    private final Map<String, Supplier<T>> registryMap = new LinkedHashMap<>();
+    private final Map<Class<T>, String> classMap = new LinkedHashMap<>();
     private final List<RegistryEntry<? extends T>> patternEntries = new ArrayList<>();
     private final Class<T> type;
     private final Identifier id;
@@ -153,29 +148,6 @@ public class Registry<T extends LangObject<T>> {
 
     public Class<T> getType() {
         return this.type;
-    }
-
-    public static void dump() {
-        for (Registry<?> registry : REGISTRIES.values()) {
-            dumpLogger.log("Registry: (" + registry.id() + ") -> {");
-            dumpLogger.log("  Type: " + registry.getType().getName() + ";");
-            for (Map.Entry<String, ?> entry : registry.entries()) {
-                Object o = null;
-                String className = null;
-                try {
-                    o = entry.getValue();
-                    className = o.getClass().getName();
-                } catch (Throwable ignored) {
-
-                }
-
-                dumpLogger.log("  (" + entry.getKey() + ") -> {");
-                dumpLogger.log("    Class : " + className + ";");
-                dumpLogger.log("    Object: " + o + ";");
-                dumpLogger.log("  }");
-            }
-            dumpLogger.log("}");
-        }
     }
 
     public boolean isFrozen() {

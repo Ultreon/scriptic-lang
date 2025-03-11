@@ -34,6 +34,6 @@ public class IsInfiniteExpr extends Expr<Boolean> {
     @Override
     public @NotNull Boolean eval(CodeContext context) throws ScriptException {
         Object eval = expr1.eval(context);
-        return eval instanceof Double aDouble && Double.isInfinite(aDouble) || eval instanceof Float aFloat && Float.isInfinite(aFloat);
+        return eval instanceof Double && Double.isInfinite((Double) eval) || eval instanceof Float && Float.isInfinite((Float) eval);
     }
 }

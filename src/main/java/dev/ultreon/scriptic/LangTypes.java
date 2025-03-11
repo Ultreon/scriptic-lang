@@ -1,8 +1,5 @@
 package dev.ultreon.scriptic;
 
-import com.ultreon.libs.commons.v0.Either;
-import com.ultreon.libs.commons.v0.Identifier;
-import com.ultreon.libs.commons.v0.tuple.Pair;
 import dev.ultreon.scriptic.lang.Type;
 
 import java.io.File;
@@ -30,8 +27,6 @@ public class LangTypes {
         register("file|java file", new Type(File.class, "a file"));
         register("(file[- ]?)?(path|location)", new Type(Path.class, "a file path"));
         register("optional value", new Type(Optional.class, "an optional value"));
-        register("either value", new Type(Either.class, "an either value"));
-        register("pair", new Type(Pair.class, "a pair"));
         register("object", new Type(Object.class, "an object"));
     }
 }

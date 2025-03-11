@@ -1,6 +1,5 @@
 package dev.ultreon.scriptic;
 
-import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.impl.Logger;
 import dev.ultreon.scriptic.impl.StdOutLogger;
 import dev.ultreon.scriptic.lang.Type;

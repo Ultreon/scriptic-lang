@@ -59,7 +59,9 @@ public class IsExpr extends Expr<Boolean> {
             return !left.equals(right);
         }
 
-        if (left instanceof Number a && right instanceof Number b) {
+        if (left instanceof Number && right instanceof Number) {
+            Number a = (Number) left;
+            Number b = (Number) right;
             if (a instanceof Double || b instanceof Double)
                 return a.doubleValue() == b.doubleValue();
             if (a instanceof Float || b instanceof Float)

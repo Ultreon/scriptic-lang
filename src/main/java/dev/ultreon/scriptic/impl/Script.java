@@ -1,6 +1,5 @@
 package dev.ultreon.scriptic.impl;
 
-import com.ultreon.libs.commons.v0.Identifier;
 import dev.ultreon.scriptic.*;
 import dev.ultreon.scriptic.impl.struct.EventStruct;
 import dev.ultreon.scriptic.lang.CodeContext;
@@ -138,7 +137,7 @@ public class Script {
     private static @Nullable Script importFromPath(Path path, ScriptEngine engine, String[] args) throws IOException, ScriptException, CompileException {
         if (Files.isRegularFile(path) && (path.getFileName().endsWith(".sc") || path.getFileName().endsWith(".txt"))) {
             if (Files.isExecutable(path)) {
-                ScripticLang.getLogger().debug("Importing script: %s".formatted(path.toString()));
+                ScripticLang.getLogger().debug(String.format("Importing script: %s", path.toString()));
                 try {
                     Script script = new Script(path, engine, args);
                     script.invoke();

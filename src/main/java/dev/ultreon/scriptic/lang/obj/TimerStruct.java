@@ -11,7 +11,7 @@ import java.util.regex.Matcher;
 
 public class TimerStruct extends Struct<TimerObject> {
     @RegExp
-    public static final String PATTERN = "^every (?<time>\\d+) (?<unit>.+)(:?)$";
+    public static final String PATTERN = "^every (?<time>\\d+) (?<unit>.+):$";
     public static final TimerObject TIMER = new TimerObject();
 
     static {

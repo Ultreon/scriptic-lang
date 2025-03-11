@@ -36,9 +36,10 @@ public class LogEffect extends Effect {
     public void invoke(CodeContext context) throws ScriptException {
         if (expr == null) return;
         var eval = expr.eval(context);
-        if (!(eval instanceof String string)) {
+        if (!(eval instanceof String)) {
             throw new ScriptException("Expected to get text, but got " + ScripticLang.getTypeName(eval.getClass()));
         }
+        String string = (String) eval;
         Script.getLogger().print(string);
     }
 }

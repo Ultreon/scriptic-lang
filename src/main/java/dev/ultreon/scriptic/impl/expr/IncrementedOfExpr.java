@@ -42,19 +42,26 @@ public class IncrementedOfExpr extends Expr {
     public @NotNull Object eval(CodeContext context) throws ScriptException {
         var eval = expr.eval(context);
 
-        if (eval instanceof BigInteger bigInteger) {
+        if (eval instanceof BigInteger) {
+            BigInteger bigInteger = (BigInteger) eval;
             return bigInteger.add(BigInteger.ONE);
-        } else if (eval instanceof Double doubleValue) {
+        } else if (eval instanceof Double) {
+            Double doubleValue = (Double) eval;
             return doubleValue + 1;
-        } else if (eval instanceof Float floatValue) {
+        } else if (eval instanceof Float) {
+            Float floatValue = (Float) eval;
             return floatValue + 1;
-        } else if (eval instanceof Long longValue) {
+        } else if (eval instanceof Long) {
+            Long longValue = (Long) eval;
             return longValue + 1;
-        } else if (eval instanceof Integer intValue) {
+        } else if (eval instanceof Integer) {
+            Integer intValue = (Integer) eval;
             return intValue + 1;
-        } else if (eval instanceof Short shortValue) {
+        } else if (eval instanceof Short) {
+            Short shortValue = (Short) eval;
             return shortValue + 1;
-        } else if (eval instanceof Byte byteValue) {
+        } else if (eval instanceof Byte) {
+            Byte byteValue = (Byte) eval;
             return byteValue + 1;
         }
 

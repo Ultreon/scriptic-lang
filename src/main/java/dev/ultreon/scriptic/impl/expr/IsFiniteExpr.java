@@ -33,6 +33,6 @@ public class IsFiniteExpr extends Expr<Boolean> {
     @Override
     public @NotNull Boolean eval(CodeContext context) throws ScriptException {
         var eval = expr1.eval(context);
-        return eval instanceof Double aDouble && Double.isFinite(aDouble) || eval instanceof Float aFloat && Float.isFinite(aFloat);
+        return eval instanceof Double && Double.isFinite((Double) eval) || eval instanceof Float && Float.isFinite((Float) eval);
     }
 }

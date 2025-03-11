@@ -8,8 +8,8 @@ group = 'dev.ultreon'
 version = '0.1-SNAPSHOT'
 
 base {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 repositories {
@@ -28,18 +28,6 @@ dependencies {
 
     // Jetbrains Annotations
     implementation 'org.jetbrains:annotations:23.1.0'
-
-    // Ultreon CoreLibs
-    api "io.github.ultreon.corelibs:collections-v0:0.2.0"
-    api "io.github.ultreon.corelibs:commons-v0:0.2.0"
-    api "io.github.ultreon.corelibs:crash-v0:0.2.0"
-    api "io.github.ultreon.corelibs:datetime-v0:0.2.0"
-    api "io.github.ultreon.corelibs:events-v1:0.2.0"
-    api "io.github.ultreon.corelibs:functions-v0:0.2.0"
-    api "io.github.ultreon.corelibs:registries-v0:0.2.0"
-    api "io.github.ultreon.corelibs:resources-v0:0.2.0"
-    api "io.github.ultreon.corelibs:text-v0:0.2.0"
-    api "io.github.ultreon.corelibs:translations-v0:0.2.0"
 }
 
 test {
@@ -50,14 +38,29 @@ java {
     withSourcesJar()
 }
 
+
 publishing {
-    repositories {
-        mavenLocal()
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
     }
 
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
+    repositories {
+        mavenLocal()
+
+        if (project.findProperty("gpr.user") != null && project.findProperty("gpr.key") != null) {
+            maven {
+                name = "UltreonMaven"
+                url = "https://maven.ultreon.dev/snapshots"
+                credentials(PasswordCredentials) {
+                    username = findProperty("ultreonmvn.name") ?: System.getenv("ULTREON_MVN_NAME")
+                    password = findProperty("ultreonmvn.secret") ?: System.getenv("ULTREON_MVN_SEC")
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+            }
         }
     }
 }

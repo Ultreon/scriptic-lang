@@ -55,7 +55,7 @@ public interface CodeContext {
     }
 
     static CodeContext of(Struct<?> struct) {
-        return new CodeContextImpl(struct, null, null, null);
+        return new CodeContextImpl(struct, null, null, new String[0]);
     }
 
     void setLastType(Type type);

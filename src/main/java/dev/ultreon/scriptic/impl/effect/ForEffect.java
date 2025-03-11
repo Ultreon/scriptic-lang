@@ -10,6 +10,7 @@ import dev.ultreon.scriptic.lang.obj.Effect;
 import dev.ultreon.scriptic.lang.obj.Expr;
 import dev.ultreon.scriptic.lang.parser.Parser;
 import org.intellij.lang.annotations.RegExp;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.lang.reflect.Array;
@@ -18,7 +19,7 @@ import java.util.regex.Matcher;
 
 public class ForEffect extends Effect {
     @RegExp
-    public static final String PATTERN = "^for[ -](every|each) (?<type>.+) in (?<iterator>.+)(:?)$";
+    public static final String PATTERN = "^for[ -](every|each) (?<type>.+) in (?<iterator>.+):$";
     private int lineNr;
     private Type type;
     private @UnknownNullability Expr<?> iteratorExpr;
@@ -41,16 +42,7 @@ public class ForEffect extends Effect {
         context.setLastEffect(this);
 
         var o = iteratorExpr.eval(context);
-        Iterator<?> iterator;
-        if (o instanceof Iterable<?> iterable) {
-            iterator = iterable.iterator();
-        } else if (o instanceof Iterator<?> iterator1) {
-            iterator = iterator1;
-        } else if (o.getClass().isArray()) {
-            iterator = new ArrayIterator(o);
-        } else {
-            throw new ScriptException("Expected to get iterator, but got " + o.getClass().getSimpleName(), lineNr);
-        }
+        Iterator<?> iterator = selectIterator(o);
 
         ForLoop loop = new ForLoop(ForLoop.Type.VALUE);
         context.startLoop(loop);
@@ -63,6 +55,25 @@ public class ForEffect extends Effect {
         }
 
         context.endLoop();
+    }
+
+    private @NotNull Iterator<?> selectIterator(Object o) throws ScriptException {
+        if (o == null) {
+            throw new ScriptException("Expected to get iterator, but got null", lineNr);
+        }
+
+        Iterator<?> iterator;
+        if (o instanceof Iterable<?>) {
+            Iterable<?> iterable = (Iterable<?>) o;
+            iterator = iterable.iterator();
+        } else if (o instanceof Iterator<?>) {
+            iterator = (Iterator<?>) o;
+        } else if (o.getClass().isArray()) {
+            iterator = new ArrayIterator(o);
+        } else {
+            throw new ScriptException("Expected to get iterator, but got " + o.getClass().getSimpleName(), lineNr);
+        }
+        return iterator;
     }
 
     @Override

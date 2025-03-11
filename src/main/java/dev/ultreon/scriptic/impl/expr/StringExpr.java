@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 
 public class StringExpr extends Expr<String> {
@@ -154,7 +155,16 @@ public class StringExpr extends Expr<String> {
         String text(CodeContext context) throws ScriptException;
     }
 
-    private record SimpleStringComponent(String text) implements StringComponent {
+    private final class SimpleStringComponent implements StringComponent {
+        private final String text;
+
+        private SimpleStringComponent(String text) {
+            this.text = text;
+        }
+
+        public String text() {
+            return text;
+        }
 
         @Override
         public String text(CodeContext context) {
@@ -165,12 +175,54 @@ public class StringExpr extends Expr<String> {
         public String toString() {
             return text;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (SimpleStringComponent) obj;
+            return Objects.equals(this.text, that.text);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(text);
+        }
     }
 
-    private record ExprStringComponent(Expr<?> text) implements StringComponent {
+    private final class ExprStringComponent implements StringComponent {
+        private final Expr<?> text;
+
+        private ExprStringComponent(Expr<?> text) {
+            this.text = text;
+        }
+
+        public Expr<?> text() {
+            return text;
+        }
+
         @Override
         public String text(CodeContext context) throws ScriptException {
             return String.valueOf(text.eval(context));
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (ExprStringComponent) obj;
+            return Objects.equals(this.text, that.text);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(text);
+        }
+
+        @Override
+        public String toString() {
+            return "ExprStringComponent[" +
+                    "text=" + text + ']';
         }
     }
 }

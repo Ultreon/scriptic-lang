@@ -1,6 +1,7 @@
 package dev.ultreon.scriptic.lang;
 
-import com.ultreon.libs.commons.v0.Identifier;
+
+import dev.ultreon.scriptic.Identifier;
 
 import java.util.HashMap;
 import java.util.Map;

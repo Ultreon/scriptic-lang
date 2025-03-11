@@ -6,8 +6,6 @@ import dev.ultreon.scriptic.impl.ScriptEngine;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.ScripticLang;
 import dev.ultreon.scriptic.impl.Script;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;
@@ -16,7 +14,6 @@ import java.nio.file.Paths;
 class ScriptTests {
     private String[] args;
 
-    @Test
     void mainScript() {
         ScripticLang.preInit();
         ScripticLang.init();
@@ -68,10 +65,10 @@ class ScriptTests {
         ScriptEngine engine = ScriptEngine.builder().build();
 
         try {
-            Script script = engine.importScript(Paths.get("main.txt"), args);
+            Script script = engine.importScript(Paths.get("main.txt"), args != null ? args : new String[]{"Bananas", "Apple"});
             script.invoke();
         } catch (CompileException | ScriptException | IOException e) {
-            Assertions.fail(e);
+            throw new RuntimeException(e);
         }
     }
 

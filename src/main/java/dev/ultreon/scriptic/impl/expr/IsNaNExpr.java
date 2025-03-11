@@ -34,6 +34,6 @@ public class IsNaNExpr extends Expr<Boolean> {
     @Override
     public @NotNull Boolean eval(CodeContext context) throws ScriptException {
         var evaluated = expr1.eval(context);
-        return evaluated instanceof Double aDouble && Double.isNaN(aDouble) || evaluated instanceof Float aFloat && Float.isNaN(aFloat);
+        return evaluated instanceof Double && Double.isNaN((Double) evaluated) || evaluated instanceof Float && Float.isNaN((Float) evaluated);
     }
 }

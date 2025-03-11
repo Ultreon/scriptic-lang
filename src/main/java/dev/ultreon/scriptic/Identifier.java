@@ -1,7 +1,5 @@
 package dev.ultreon.scriptic;
 
-import com.ultreon.libs.commons.v0.tuple.Pair;
-import com.ultreon.libs.commons.v0.exceptions.SyntaxException;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -170,12 +168,6 @@ public final class Identifier {
     @Contract(pure = true)
     public Collection<String> toCollection() {
         return this.toList();
-    }
-
-    @NotNull
-    @Contract(value = " -> new", pure = true)
-    public Pair<String, String> toPair() {
-        return new Pair<>(this.location, this.path);
     }
 
     @NotNull

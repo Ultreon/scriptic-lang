@@ -21,7 +21,8 @@ public class ContainsExpr extends Expr<Boolean> {
 
     static {
         ContainsExpr.<String>register((a, b) -> {
-            if (b instanceof CharSequence charSequence) {
+            if (b instanceof CharSequence) {
+                CharSequence charSequence = (CharSequence) b;
                 return a.contains(charSequence);
             }
 

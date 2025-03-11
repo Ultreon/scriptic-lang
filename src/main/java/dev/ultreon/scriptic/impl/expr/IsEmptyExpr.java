@@ -20,7 +20,7 @@ public class IsEmptyExpr extends Expr<Boolean> {
     public static final String PATTERN = "^(?<expr1>.+) is(?<inverter> not) empty$";
 
     static {
-        IsEmptyExpr.register(CharSequence::isEmpty);
+        IsEmptyExpr.register(String::isEmpty);
         IsEmptyExpr.register((boolean[] arr) -> arr.length == 0);
         IsEmptyExpr.register((byte[] arr) -> arr.length == 0);
         IsEmptyExpr.register((char[] arr) -> arr.length == 0);

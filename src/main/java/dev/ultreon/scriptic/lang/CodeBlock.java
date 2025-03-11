@@ -1,6 +1,6 @@
 package dev.ultreon.scriptic.lang;
 
-import com.ultreon.libs.commons.v0.Identifier;
+import dev.ultreon.scriptic.Identifier;
 import dev.ultreon.scriptic.ScriptException;
 import dev.ultreon.scriptic.ScripticLang;
 import dev.ultreon.scriptic.lang.obj.Effect;

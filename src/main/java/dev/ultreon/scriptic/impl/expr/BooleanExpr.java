@@ -25,9 +25,22 @@ public class BooleanExpr extends Expr<Boolean> {
     @Override
     public void load(int lineNr, Matcher matcher) throws CompileException {
         switch (matcher.group()) {
-            case "true", "on", "yes", "enable", "enabled" -> val = true;
-            case "false", "off", "no", "disable", "disabled" -> val = false;
-            default -> throw new IllegalArgumentException("Invalid boolean value: " + block);
+            case "true":
+            case "on":
+            case "yes":
+            case "enable":
+            case "enabled":
+                val = true;
+                break;
+            case "false":
+            case "off":
+            case "no":
+            case "disable":
+            case "disabled":
+                val = false;
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid boolean value: " + block);
         }
     }
 

@@ -13,7 +13,7 @@ public class LangStructs {
     }
 
     public static void init() {
-        create("^on (?<event>.+)(:?)$", EventStruct::new);
+        create("^on (?<event>.+):$", EventStruct::new);
         create(TimerStruct.PATTERN, TimerStruct::new);
     }
 }

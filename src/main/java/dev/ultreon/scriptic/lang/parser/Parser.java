@@ -1,6 +1,7 @@
 package dev.ultreon.scriptic.lang.parser;
 
 import java.math.BigDecimal;
+import java.util.stream.Collectors;
 
 public class Parser {
     private final String code;
@@ -328,29 +329,29 @@ public class Parser {
             while (!isEOF()) {
                 c = code.charAt(offset);
                 switch (c) {
-                    case ' ' -> {
+                    case ' ':
                         if (withinIndent) {
                             indentation++;
                         }
                         if (returnIndents || !withinIndent || indentation > indent) {
                             sb.append(c);
                         }
-                    }
-                    case '\t' -> {
+                        break;
+                    case '\t':
                         if (!returnIndents) {
                             throw new RuntimeException("Tabs are not allowed in indentation.");
                         }
-                    }
-                    case '\n' -> {
+                        break;
+                    case '\n':
                         lastOffsetWithNewline = offset;
                         indentation = 0;
                         withinIndent = true;
                         sb.append('\n');
-                    }
-                    default -> {
+                        break;
+                    default:
                         withinIndent = false;
                         sb.append(c);
-                    }
+                        break;
                 }
                 if (!withinIndent && indentation < indent) {
                     offset = lastOffsetWithNewline;
@@ -417,7 +418,7 @@ public class Parser {
 
     public String getRow(int row) {
         String code = this.code;
-        String[] split = this.code.lines().toList().toArray(new String[0]);
+        String[] split = this.code.lines().toArray(String[]::new);
         if (row < 1 || row > split.length) {
             return "";
         }

@@ -1,6 +1,6 @@
 package dev.ultreon.scriptic.impl;
 
-import com.ultreon.libs.commons.v0.Identifier;
+import dev.ultreon.scriptic.Identifier;
 import dev.ultreon.scriptic.ScripticLang;
 
 public class CodeContexts {
